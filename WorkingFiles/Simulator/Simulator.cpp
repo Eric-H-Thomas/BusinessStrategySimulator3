@@ -598,6 +598,11 @@ int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const
     // Increment the number of AI turns that have taken place thus far in the simulation
     iNumAITurns++;
 
+    // Update statistics for reward calculation
+    auto firmPtr = get_firm_ptr_from_agent_id(iActingAgentID);
+    mapAIAgentIDToCapitalAtLastTurn[iActingAgentID] = firmPtr->getDbCapital();
+    mapAIAgentIDToMicroTimeStepOfLastTurn[iActingAgentID] = iCurrentMicroTimeStep;
+
     return 0;
 }
 
