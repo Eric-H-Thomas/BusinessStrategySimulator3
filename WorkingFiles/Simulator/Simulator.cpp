@@ -710,12 +710,17 @@ vector<Action> Simulator::get_actions_for_all_agents_ai_agent_turn(const int& iA
             vecActions.emplace_back(Action::generate_none_action(pair.first));
         }
         else if (agentPtr->enumAgentType == AgentType::StableBaselines3) {
-            // If the AI agent is bankrupt, assign the none action.
-            if (is_bankrupt(iActingAgentID)) {
-                vecActions.emplace_back(Action::generate_none_action(iActingAgentID));
+            if (agentPtr->get_agent_ID() == iActingAgentID) {
+                // If the AI agent is bankrupt, assign the none action.
+                if (is_bankrupt(iActingAgentID)) {
+                    vecActions.emplace_back(Action::generate_none_action(iActingAgentID));
+                }
+                else {
+                    vecActions.emplace_back(convert_action_ID_to_action_object(iActingAgentID, iAIAgentActionID));
+                }
             }
             else {
-                vecActions.emplace_back(convert_action_ID_to_action_object(iActingAgentID, iAIAgentActionID));
+                vecActions.emplace_back(Action::generate_none_action(agentPtr->get_agent_ID()));
             }
         }
     }
