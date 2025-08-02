@@ -1022,9 +1022,8 @@ Action Simulator::get_exit_action(const ControlAgent& agent) {
             double dbFixedCost = dataCache.mapFirmMarketComboToFixedCost[pairFirmMarket];
             double dbVarCost = dataCache.mapFirmMarketComboToVarCost[pairFirmMarket];
             double dbQty = dataCache.mapFirmMarketComboToQtyProduced[pairFirmMarket];
-            double dbPrice = dataCache.mapFirmMarketComboToPrice[pairFirmMarket];
-            double dbTotalCost = dbFixedCost + (dbVarCost * dbPrice);
-            double dbProfit = dbRev = dbTotalCost;
+            double dbTotalCost = dbFixedCost + (dbVarCost * dbQty);
+            double dbProfit = dbRev - dbTotalCost;
 
             if (dbProfit < dbLowestProfit) {
                 dbLowestProfit = dbProfit;
