@@ -62,7 +62,7 @@ double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vec
 int MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<int>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension\"" << std::endl;
+        std::cerr << "Vectors must have the same dimension" << std::endl;
         throw std::exception();
     }
 
@@ -79,7 +79,7 @@ int MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<in
 double MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<double>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension\"" << std::endl;
+        std::cerr << "Vectors must have the same dimension" << std::endl;
         throw std::exception();
     }
 
@@ -96,7 +96,7 @@ double MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector
 double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<int>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension\"" << std::endl;
+        std::cerr << "Vectors must have the same dimension" << std::endl;
         throw std::exception();
     }
 
