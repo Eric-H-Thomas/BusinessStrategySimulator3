@@ -34,6 +34,7 @@ public:
 
     // Miscellaneous
     void add_market(Market market);
+    void clear_markets();
 
 private:
     int iPossibleCapabilities;

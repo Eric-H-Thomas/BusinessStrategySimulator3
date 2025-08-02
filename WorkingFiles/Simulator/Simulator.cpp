@@ -430,6 +430,7 @@ int Simulator::init_markets() {
 
 int Simulator::reset_markets() {
     try {
+        this->economy.clear_markets();
         const auto& market_parameters = this->simulatorConfigs["default_market_parameters"];
         double dbVarCostMin = market_parameters["variable_cost_min"];
         double dbVarCostMax = market_parameters["variable_cost_max"];
@@ -542,8 +543,17 @@ void Simulator::set_agent_turn_order() {
     // Generate a vector for the new turn order
     int iTotalTurns = get_micro_steps_per_macro_step();
     vector<int> vecNewTurnOrder;
-    for (int i = 0; i < iTotalTurns; i++) {
-        vecNewTurnOrder.push_back(i);
+
+    // Add each agent ID exactly once
+    for (const auto& pair : mapAgentIDToAgentPtr) {
+        vecNewTurnOrder.push_back(pair.first);
+    }
+
+    // Add placeholder IDs for skipped turns
+    int iSkipSlots = iTotalTurns - static_cast<int>(mapAgentIDToAgentPtr.size());
+    int iPlaceholderID = -1;
+    for (int i = 0; i < iSkipSlots; i++) {
+        vecNewTurnOrder.push_back(iPlaceholderID--);
     }
 
     // Shuffle the new turn order vector
@@ -597,6 +607,11 @@ int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const
 
     // Increment the number of AI turns that have taken place thus far in the simulation
     iNumAITurns++;
+
+    // Update statistics for reward calculation
+    auto firmPtr = get_firm_ptr_from_agent_id(iActingAgentID);
+    mapAIAgentIDToCapitalAtLastTurn[iActingAgentID] = firmPtr->getDbCapital();
+    mapAIAgentIDToMicroTimeStepOfLastTurn[iActingAgentID] = iCurrentMicroTimeStep;
 
     return 0;
 }
