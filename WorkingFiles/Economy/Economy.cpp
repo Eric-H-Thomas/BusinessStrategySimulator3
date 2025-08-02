@@ -64,6 +64,10 @@ void Economy::add_market(Market market) {
     this->vecMarkets.push_back(market);
 }
 
+void Economy::clear_markets() {
+    this->vecMarkets.clear();
+}
+
 set<int> Economy::get_set_market_IDs() const {
     set<int> setMarketIDs;
     for (auto market : vecMarkets) {

@@ -430,6 +430,7 @@ int Simulator::init_markets() {
 
 int Simulator::reset_markets() {
     try {
+        this->economy.clear_markets();
         const auto& market_parameters = this->simulatorConfigs["default_market_parameters"];
         double dbVarCostMin = market_parameters["variable_cost_min"];
         double dbVarCostMax = market_parameters["variable_cost_max"];
