@@ -854,7 +854,10 @@ int Simulator::execute_exit_action(const Action& action, map<int, double>* pMapF
     double dbEntryCost = dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket);
     double dbExitCost = marketCopy.getExitCostAsPercentageOfEntryCost() * dbEntryCost * 0.01; // Scaling factor due to whole percentages
 
-    // Update the map of firm IDs to capital change with the entry cost of this action
+    // Update capital within the firm object
+    firmPtr->add_capital(-dbExitCost);
+
+    // Update the map of firm IDs to capital change with the exit cost of this action
     pMapFirmIDToCapitalChange->at(firmPtr->getFirmID()) -= dbExitCost;
 
     // Update the fixed cost for this firm-market combo
