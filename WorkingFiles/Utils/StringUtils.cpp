@@ -29,12 +29,3 @@ bool StringUtils::equalsIgnoreCaseAndIgnoreUnderscores(const string& str1, const
 
     return equalsIgnoreCase(str1NoUnderscores, str2NoUnderscores);
 }
-
-//string StringUtils::getTimeStampAsString() {
-//    std::time_t t = std::time(nullptr);
-//    std::tm* now = std::localtime(&t);
-//
-//    char buffer[128];
-//    strftime(buffer, sizeof(buffer), "%m-%d-%Y %X", now);
-//    return buffer;
-//}

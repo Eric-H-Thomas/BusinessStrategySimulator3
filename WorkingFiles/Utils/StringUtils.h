@@ -11,5 +11,4 @@ public:
     static string toUpper(const string& str);
     static bool equalsIgnoreCase(const string& str1, const string& str2);
     static bool equalsIgnoreCaseAndIgnoreUnderscores(const string& str1, const string& str2);
-    static string getTimeStampAsString();
 };

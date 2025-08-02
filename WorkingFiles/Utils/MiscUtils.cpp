@@ -167,14 +167,14 @@ vector<int> MiscUtils::element_wise_logical_and(const vector<int>& vector1, cons
 vector<int> MiscUtils::element_wise_logical_or(const vector<int>& vector1, const vector<int>& vector2) {
     // Check that the vectors have the same size
     if (vector1.size() != vector2.size()) {
-        std::cerr << "Vector sizes must be the same for element-wise AND." << std::endl;
+        std::cerr << "Vector sizes must be the same for element-wise OR." << std::endl;
         throw std::exception();
     }
 
     std::vector<int> result;
     result.reserve(vector1.size()); // Reserve space for the result vector
 
-    // Perform element-wise logical AND and store the result
+    // Perform element-wise logical OR and store the result
     for (size_t i = 0; i < vector1.size(); i++) {
         result.push_back(vector1[i] || vector2[i]);
     }
