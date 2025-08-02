@@ -1488,7 +1488,7 @@ vector<double> Simulator::get_variable_cost_representation(const int& iAgentID) 
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbVarCost = dataCache.mapFirmMarketComboToVarCost[pair];
                 vecDbVarCosts.push_back(dbVarCost);
             }
@@ -1500,7 +1500,7 @@ vector<double> Simulator::get_variable_cost_representation(const int& iAgentID) 
         if (!is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbVarCost = dataCache.mapFirmMarketComboToVarCost[pair];
                 vecDbVarCosts.push_back(dbVarCost);
             }
@@ -1529,7 +1529,7 @@ vector<double> Simulator::get_fixed_cost_representation(const int& iAgentID) {
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbFixedCost = dataCache.mapFirmMarketComboToFixedCost[pair];
                 vecDbFixedCosts.push_back(dbFixedCost);
             }
@@ -1541,7 +1541,7 @@ vector<double> Simulator::get_fixed_cost_representation(const int& iAgentID) {
         if (!is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbFixedCost = dataCache.mapFirmMarketComboToFixedCost[pair];
                 vecDbFixedCosts.push_back(dbFixedCost);
             }
@@ -1623,7 +1623,7 @@ vector<double> Simulator::get_entry_cost_representation(const int& iAgentID) {
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbEntryCost = dataCache.mapFirmMarketComboToEntryCost[pair];
                 vecDbEntryCosts.push_back(dbEntryCost);
             }
@@ -1635,7 +1635,7 @@ vector<double> Simulator::get_entry_cost_representation(const int& iAgentID) {
         if (!is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbEntryCost = dataCache.mapFirmMarketComboToEntryCost[pair];
                 vecDbEntryCosts.push_back(dbEntryCost);
             }
@@ -1680,7 +1680,7 @@ vector<double> Simulator::get_quantity_representation(const int& iAgentID) {
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbQty = dataCache.mapFirmMarketComboToQtyProduced[pair];
                 vecDbQuantities.push_back(dbQty);
             }
@@ -1692,7 +1692,7 @@ vector<double> Simulator::get_quantity_representation(const int& iAgentID) {
         if (!is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbQty = dataCache.mapFirmMarketComboToQtyProduced[pair];
                 vecDbQuantities.push_back(dbQty);
             }
@@ -1722,7 +1722,7 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbPrice = dataCache.mapFirmMarketComboToPrice[pair];
                 vecDbPrices.push_back(dbPrice);
             }
@@ -1734,7 +1734,7 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
         if (!is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
-                auto pair = std::make_pair(ptrFirmOfActingAgent->getFirmID(), iMarketID);
+                auto pair = std::make_pair(firmPtr->getFirmID(), iMarketID);
                 double dbPrice = dataCache.mapFirmMarketComboToPrice[pair];
                 vecDbPrices.push_back(dbPrice);
             }
