@@ -6,6 +6,7 @@
 #include "../Utils/StringUtils.h"
 #include <vector>
 #include <iostream>
+#include <stdexcept>
 using std::endl;
 using std::vector;
 using std::cerr;
@@ -20,21 +21,33 @@ ControlAgent::ControlAgent(const int& iAgentID, const string& strEntryPolicy,
     this->enumAgentType = AgentType::Control;
 
     // Set the entry policy
-    if (StringUtils::equalsIgnoreCase(strEntryPolicy, "all"))
+    if (StringUtils::equalsIgnoreCase(strEntryPolicy, "all")) {
         this->enumEntryPolicy = EntryPolicy::All;
-    if (StringUtils::equalsIgnoreCaseAndIgnoreUnderscores(strEntryPolicy, "highest_overlap"))
+    }
+    else if (StringUtils::equalsIgnoreCaseAndIgnoreUnderscores(strEntryPolicy, "highest_overlap")) {
         this->enumEntryPolicy = EntryPolicy::HighestOverlap;
+    }
+    else {
+        throw std::invalid_argument("Invalid entry policy: " + strEntryPolicy);
+    }
 
     // Set the exit policy
-    if (StringUtils::equalsIgnoreCase(strExitPolicy, "all"))
+    if (StringUtils::equalsIgnoreCase(strExitPolicy, "all")) {
         this->enumExitPolicy = ExitPolicy::All;
-    if (StringUtils::equalsIgnoreCase(strExitPolicy, "loss")) {
+    }
+    else if (StringUtils::equalsIgnoreCase(strExitPolicy, "loss")) {
         this->enumExitPolicy = ExitPolicy::Loss;
+    }
+    else {
+        throw std::invalid_argument("Invalid exit policy: " + strExitPolicy);
     }
 
     // Set the production policy
     if (StringUtils::equalsIgnoreCase(strProductionPolicy, "cournot")) {
         this->enumProductionPolicy = ProductionPolicy::Cournot;
+    }
+    else {
+        throw std::invalid_argument("Invalid production policy: " + strProductionPolicy);
     }
 
     // Set the remaining agent hyperparameters
