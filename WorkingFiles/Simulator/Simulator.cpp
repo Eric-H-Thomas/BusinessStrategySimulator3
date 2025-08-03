@@ -8,6 +8,7 @@
 #include <fstream>
 #include <random>
 #include <cmath>
+#include <stdexcept>
 
 using std::map;
 using std::vector;
@@ -1772,6 +1773,9 @@ double Simulator::generate_reward(const int& iAgentID) {
     double dbPreviousCapital = mapAIAgentIDToCapitalAtLastTurn[iAgentID];
     int iPreviousMicroTimeStep = mapAIAgentIDToMicroTimeStepOfLastTurn[iAgentID];
     double dbCapitalChange = dbCurrentCapital - dbPreviousCapital;
+    if (iCurrentMicroTimeStep == iPreviousMicroTimeStep) {
+        throw std::runtime_error("generate_reward called with current and previous time steps equal");
+    }
     double dbAverageCapitalChange = dbCapitalChange / (iCurrentMicroTimeStep - iPreviousMicroTimeStep);
     return dbAverageCapitalChange;
 }
