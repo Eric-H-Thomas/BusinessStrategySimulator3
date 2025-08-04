@@ -609,11 +609,6 @@ int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const
     // Increment the number of AI turns that have taken place thus far in the simulation
     iNumAITurns++;
 
-    // Update statistics for reward calculation
-    auto firmPtr = get_firm_ptr_from_agent_id(iActingAgentID);
-    mapAIAgentIDToCapitalAtLastTurn[iActingAgentID] = firmPtr->getDbCapital();
-    mapAIAgentIDToMicroTimeStepOfLastTurn[iActingAgentID] = iCurrentMicroTimeStep;
-
     return 0;
 }
 
@@ -1776,6 +1771,7 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
 
 // Generates reward for the specified RL agent as its change in capital since the last time it acted
 double Simulator::generate_reward(const int& iAgentID) {
+    // Calculate average capital change since the last time this agent acted
     auto firmPtr = get_firm_ptr_from_agent_id(iAgentID);
     double dbCurrentCapital = firmPtr->getDbCapital();
     double dbPreviousCapital = mapAIAgentIDToCapitalAtLastTurn[iAgentID];
@@ -1785,6 +1781,11 @@ double Simulator::generate_reward(const int& iAgentID) {
         throw std::runtime_error("generate_reward called with current and previous time steps equal");
     }
     double dbAverageCapitalChange = dbCapitalChange / (iCurrentMicroTimeStep - iPreviousMicroTimeStep);
+
+    // Update statistics for reward calculation
+    mapAIAgentIDToCapitalAtLastTurn[iAgentID] = dbCurrentCapital;
+    mapAIAgentIDToMicroTimeStepOfLastTurn[iAgentID] = iCurrentMicroTimeStep;
+
     return dbAverageCapitalChange;
 }
 

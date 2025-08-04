@@ -2,7 +2,7 @@
 // Created by Eric Thomas on 8/17/23.
 //
 
-#define NOT_YET_SET -1
+#define NOT_YET_SET (-1)
 #include "Economy.h"
 #include <random>
 
