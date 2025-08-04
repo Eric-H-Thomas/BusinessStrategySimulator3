@@ -1475,12 +1475,11 @@ vector<double> Simulator::get_market_overlap_representation() {
                 double dbOverlap = MiscUtils::get_percentage_overlap(market1.get_vec_capabilities(),
                                                                      market2.get_vec_capabilities());
 
-                // This percentage overlap represents the percentage of all possible capabilities in the entire economy held by both markets.
-                // To convert this to the percent of Market A's capabilities that market B also requires, we must scale this percentage as follows:
-
-                auto defaultEconomyParameters = this->simulatorConfigs["default_economy_parameters"];
-                int iNumPossibleCapabilities = defaultEconomyParameters["possible_capabilities"];
-                int iCapabilitiesPerMarket = defaultEconomyParameters["capabilities_per_market"];
+                // This percentage overlap represents the percentage of all possible capabilities in the entire
+                // economy held by both markets. To convert this to the percent of Market A's capabilities that
+                // Market B also requires, we must divide this percentage by the number of capabilities per market.
+                int iNumPossibleCapabilities = economy.get_num_possible_capabilities();
+                int iCapabilitiesPerMarket = economy.get_num_capabilities_per_market();
 
                 double dbCommonCapabilities = iNumPossibleCapabilities * dbOverlap;
                 double dbTrueOverlap = dbCommonCapabilities / iCapabilitiesPerMarket;
