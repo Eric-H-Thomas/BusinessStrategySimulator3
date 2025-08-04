@@ -1781,6 +1781,11 @@ double Simulator::generate_reward(const int& iAgentID) {
 }
 
 int Simulator::get_next_AI_agent_index() {
+    if (iNumAIAgents == 0) {
+        // No AI agents available to act
+        return -1;
+    }
+
     int iAIAgentNumber = iNumAITurns % iNumAIAgents; // Which, of all the AI agents, is acting?
     // For example, if there are two AI agents,
     // this will either be 0 or 1. iNumAITurns
