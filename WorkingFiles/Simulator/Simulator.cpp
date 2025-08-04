@@ -1473,9 +1473,7 @@ vector<double> Simulator::get_market_overlap_representation() {
 
                 // This percentage overlap represents the percentage of all possible capabilities in the entire
                 // economy held by both markets. To convert this to the percent of Market A's capabilities that
-                // Market B also requires, we must scale this percentage using the current economy state rather
-                // than static configuration values.
-
+                // Market B also requires, we must divide this percentage by the number of capabilities per market.
                 int iNumPossibleCapabilities = economy.get_num_possible_capabilities();
                 int iCapabilitiesPerMarket = economy.get_num_capabilities_per_market();
 
