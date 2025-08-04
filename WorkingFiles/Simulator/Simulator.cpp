@@ -1339,6 +1339,10 @@ double Simulator::get_average_var_cost_in_market(Market market) {
 
     set<int> setFirmsInMarket = get_firm_IDs_in_market(market);
 
+    if (setFirmsInMarket.empty()) {
+        return 0.0;
+    }
+
     double dbTotalVarCost = 0.0;
     for (int iFirmID : setFirmsInMarket) {
         dbTotalVarCost += mapFirmToVarCost[iFirmID];
