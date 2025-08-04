@@ -745,11 +745,16 @@ vector<Action> Simulator::get_actions_for_all_agents_ai_agent_turn(const int& iA
 
 Action Simulator::convert_action_ID_to_action_object(const int& iActingAgentID, const int& iAIAgentActionID) {
     // The action space for the StableBaselines3 interface is a vector of length num_markets+1. An action ID less
-    // than or equal to num_markets represents a reversal of market presence in the given market. An action ID equal
+    // than num_markets represents a reversal of market presence in the given market. An action ID equal
     // to num_markets represents the do-nothing action.
 
+    const int iTotalMarkets = economy.get_total_markets();
+    if (iAIAgentActionID < 0 || iAIAgentActionID > iTotalMarkets) {
+        return Action::generate_none_action(iActingAgentID);
+    }
+
     // Do nothing action
-    if (iAIAgentActionID == economy.get_total_markets()) {
+    if (iAIAgentActionID == iTotalMarkets) {
         return Action::generate_none_action(iActingAgentID);
     }
 
