@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <cmath>
 
 int MiscUtils::choose_index_given_probabilities(const std::vector<double>& probabilities) {
     // Check if the probabilities vector is empty
@@ -21,7 +22,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
     for (double probability : probabilities) {
         dbSum += probability;
     }
-    if (abs(100.0 - dbSum) > 1E-12) { // Allow for tiny numerical imprecision
+    if (std::fabs(100.0 - dbSum) > 1E-12) { // Allow for tiny numerical imprecision
         std::cerr << "Error: Probabilities vector does not sum to 100." << std::endl;
         return -1; // Return an error code
     }
