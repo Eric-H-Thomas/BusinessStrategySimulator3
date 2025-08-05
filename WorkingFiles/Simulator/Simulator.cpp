@@ -122,6 +122,9 @@ int Simulator::reset() {
         this->reset_markets();
     }
 
+    // Clear out the agent turn order
+    vecAgentTurnOrder.clear();
+
     // Set current micro time step, macro time step, and number of AI turns to 0
     iCurrentMicroTimeStep = 0;
     iCurrentMacroTimeStep = 0;

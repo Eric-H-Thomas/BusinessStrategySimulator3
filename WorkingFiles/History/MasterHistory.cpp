@@ -43,7 +43,7 @@ int MasterHistory::generate_master_output() {
     ofStreamMasterOutput << "\n";
 
     for (int i = 0; i < vecDataRows.size(); i++) {
-        auto row = vecDataRows.at(i);
+        auto row = vecDataRows[i];
         ofStreamMasterOutput << i << ",";
         ofStreamMasterOutput << row.iSim << ",";
         ofStreamMasterOutput << row.iMicroTimeStep << ",";
@@ -86,13 +86,13 @@ int MasterHistory::generate_market_overlap_file() {
     int iRow = 0;
     // Iterate through each simulation
     for (int i = 0; i < this->vecSimulationHistoryPtrs.size(); i++) {
-        auto pSimulationHistory = vecSimulationHistoryPtrs.at(i);
+        auto pSimulationHistory = vecSimulationHistoryPtrs[i];
         // Iterate through each market A
         for (int j = 0; j < this->iNumMarkets; j++) {
-            auto vecMarketOverlap = pSimulationHistory->vecOfVecMarketOverlapMatrix.at(j);
+            auto vecMarketOverlap = pSimulationHistory->vecOfVecMarketOverlapMatrix[j];
             // Iterate through each market B
             for (int k = 0; k < this->iNumMarkets; k++) {
-                double dbPercentOverlap = vecMarketOverlap.at(k);
+                double dbPercentOverlap = vecMarketOverlap[k];
                 int iCommonCapabilities = static_cast<int>(round(this->iCapabilitiesPerMarket * dbPercentOverlap));
 
                 // Insert a row of data
@@ -137,11 +137,11 @@ void MasterHistory::prepare_data_for_output() {
             for (int iMarket = 0; iMarket < iNumMarkets; iMarket++) {
                 for (int iMicroTimeStep = 0; iMicroTimeStep < iMicroStepsPerSim; iMicroTimeStep++) {
                     int iRow = get_row_number(iSim, iFirm, iMarket, iMicroTimeStep);
-                    vecDataRows.at(iRow).iSim = iSim;
-                    vecDataRows.at(iRow).iFirmID = iFirm;
-                    vecDataRows.at(iRow).strAgentType = vecSimulationHistoryPtrs.at(iSim)->mapFirmToAgentDescription[iFirm];
-                    vecDataRows.at(iRow).iMarketID = iMarket;
-                    vecDataRows.at(iRow).iMicroTimeStep = iMicroTimeStep;
+                    vecDataRows[iRow].iSim = iSim;
+                    vecDataRows[iRow].iFirmID = iFirm;
+                    vecDataRows[iRow].strAgentType = vecSimulationHistoryPtrs[iSim]->mapFirmToAgentDescription.at(iFirm);
+                    vecDataRows[iRow].iMarketID = iMarket;
+                    vecDataRows[iRow].iMicroTimeStep = iMicroTimeStep;
                 }
             }
         }
@@ -162,20 +162,20 @@ void MasterHistory::fill_in_capital_info() {
         for (int iFirm = 0; iFirm < iNumFirms; iFirm++) {
             // Get all the capital changes corresponding to the simulation-firm combo
             vector<CapitalChange> vecCapitalChanges;
-            for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecCapitalChanges) {
+            for (auto entry : vecSimulationHistoryPtrs[iSim]->vecCapitalChanges) {
                 if (entry.iFirmID == iFirm) {
                     vecCapitalChanges.push_back(entry);
                 }
             }
 
             // Get the stating capital amount
-            double dbStartingCapital = vecSimulationHistoryPtrs.at(iSim)->mapFirmStartingCapital[iFirm];
+            double dbStartingCapital = vecSimulationHistoryPtrs[iSim]->mapFirmStartingCapital.at(iFirm);
 
             // Account for the case when capital never changed
             if (vecCapitalChanges.empty()) {
                 int iStartRow = get_row_number(iSim, iFirm, 0, 0);
                 for (int i = 0; i < iNumMarkets * iMicroStepsPerSim; i++) {
-                    vecDataRows.at(iStartRow + i).dbCapital = dbStartingCapital;
+                    vecDataRows[iStartRow + i].dbCapital = dbStartingCapital;
                 }
             }
 
@@ -191,7 +191,7 @@ void MasterHistory::fill_in_capital_info() {
                     int iEndRow = get_row_number(iSim, iFirm, iMarket, entry.iMicroTimeStep);
                     // Update the rows with the current capital amount
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).dbCapital = dbCurrentCapital;
+                        vecDataRows[iRow].dbCapital = dbCurrentCapital;
                     }
 
                     // Fill in capital amounts for rows after the last capital change
@@ -201,7 +201,7 @@ void MasterHistory::fill_in_capital_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current capital amount
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).dbCapital = entry.dbNewCapitalQty;
+                            vecDataRows[iRow].dbCapital = entry.dbNewCapitalQty;
                         }
                     }
                 } // End of loop through markets
@@ -223,7 +223,7 @@ void MasterHistory::fill_in_revenue_info() {
                 // Get all the changes corresponding to the simulation-firm-market combo
                 vector<RevenueChange> vecRevenueChanges;
 
-                for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecRevenueChanges) {
+                for (auto entry : vecSimulationHistoryPtrs[iSim]->vecRevenueChanges) {
                     if (entry.iFirmID == iFirm && entry.iMarketID == iMarket) {
                         vecRevenueChanges.push_back(entry);
                     }
@@ -237,7 +237,7 @@ void MasterHistory::fill_in_revenue_info() {
                 if (vecRevenueChanges.empty()) {
                     int iStartRow = get_row_number(iSim, iFirm, iMarket, 0);
                     for (int i = 0; i < iMicroStepsPerSim; i++) {
-                        vecDataRows.at(iStartRow + i).dbRevenue = dbStartingRevenue;
+                        vecDataRows[iStartRow + i].dbRevenue = dbStartingRevenue;
                     }
                 }
 
@@ -254,7 +254,7 @@ void MasterHistory::fill_in_revenue_info() {
 
                     // Update the rows with the current capital amount
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).dbRevenue = dbCurrentRevenue;
+                        vecDataRows[iRow].dbRevenue = dbCurrentRevenue;
                     }
 
                     // Update the time step and capital
@@ -267,7 +267,7 @@ void MasterHistory::fill_in_revenue_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current capital amount
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).dbRevenue = dbCurrentRevenue;
+                            vecDataRows[iRow].dbRevenue = dbCurrentRevenue;
                         }
                     }
                 } // End of loop through vector of revenue changes for current simulation-firm-market combo
@@ -285,7 +285,7 @@ void MasterHistory::fill_in_market_presence_info() {
                 // Get all the changes corresponding to the simulation-firm-market combo
                 vector<MarketPresenceChange> vecMarketPresenceChanges;
 
-                for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecMarketPresenceChanges) {
+                for (auto entry : vecSimulationHistoryPtrs[iSim]->vecMarketPresenceChanges) {
                     if (entry.iFirmID == iFirm && entry.iMarketID == iMarket) {
                         vecMarketPresenceChanges.push_back(entry);
                     }
@@ -299,7 +299,7 @@ void MasterHistory::fill_in_market_presence_info() {
                 if (vecMarketPresenceChanges.empty()) {
                     int iStartRow = get_row_number(iSim, iFirm, iMarket, 0);
                     for (int i = 0; i < iMicroStepsPerSim; i++) {
-                        vecDataRows.at(iStartRow + i).bInMarket = bStartingPresence;
+                        vecDataRows[iStartRow + i].bInMarket = bStartingPresence;
                     }
                 }
 
@@ -316,7 +316,7 @@ void MasterHistory::fill_in_market_presence_info() {
 
                     // Update the rows with the current market presence value
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).bInMarket = bCurrentPresence;
+                        vecDataRows[iRow].bInMarket = bCurrentPresence;
                     }
 
                     // Update the time step and market presence value
@@ -329,7 +329,7 @@ void MasterHistory::fill_in_market_presence_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current market presence value
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).bInMarket = bCurrentPresence;
+                            vecDataRows[iRow].bInMarket = bCurrentPresence;
                         }
                     }
                 } // End of loop through vector of market presence changes for current simulation-firm-market combo
@@ -340,17 +340,17 @@ void MasterHistory::fill_in_market_presence_info() {
 
 void MasterHistory::fill_in_variable_cost_info() {
     for (int iSim = 0; iSim < vecSimulationHistoryPtrs.size(); iSim++) {
-        auto mapFirmMarketComboToVarCost = vecSimulationHistoryPtrs.at(iSim)->mapFirmMarketComboToVarCost;
+        auto mapFirmMarketComboToVarCost = vecSimulationHistoryPtrs[iSim]->mapFirmMarketComboToVarCost;
         for (int iFirm = 0; iFirm < iNumFirms; iFirm++) {
             for (int iMarket = 0; iMarket < iNumMarkets; iMarket++) {
                 auto pairFirmMarket = std::make_pair(iFirm, iMarket);
                 for (int iMicroStep = 0; iMicroStep < iMicroStepsPerSim; iMicroStep++) {
                     int iRow = get_row_number(iSim, iFirm, iMarket, iMicroStep);
-                    if (vecDataRows.at(iRow).bInMarket) {
-                        vecDataRows.at(iRow).dbVarCost = mapFirmMarketComboToVarCost[pairFirmMarket];
+                    if (vecDataRows[iRow].bInMarket) {
+                        vecDataRows[iRow].dbVarCost = mapFirmMarketComboToVarCost.at(pairFirmMarket);
                     }
                     else {
-                        vecDataRows.at(iRow).dbVarCost = 0.0;
+                        vecDataRows[iRow].dbVarCost = 0.0;
                     }
                 } // End of loop over micro time steps
             } // End of loop over markets
@@ -367,7 +367,7 @@ void MasterHistory::fill_in_fixed_cost_info() {
                 // Get all the changes corresponding to the simulation-firm-market combo
                 vector<FixedCostChange> vecFixedCostChanges;
 
-                for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecFixedCostChanges) {
+                for (auto entry : vecSimulationHistoryPtrs[iSim]->vecFixedCostChanges) {
                     if (entry.iFirmID == iFirm && entry.iMarketID == iMarket) {
                         vecFixedCostChanges.push_back(entry);
                     }
@@ -381,7 +381,7 @@ void MasterHistory::fill_in_fixed_cost_info() {
                 if (vecFixedCostChanges.empty()) {
                     int iStartRow = get_row_number(iSim, iFirm, iMarket, 0);
                     for (int i = 0; i < iMicroStepsPerSim; i++) {
-                        vecDataRows.at(iStartRow + i).dbFixedCost = dbStartingFixedCost;
+                        vecDataRows[iStartRow + i].dbFixedCost = dbStartingFixedCost;
                     }
                 }
 
@@ -398,7 +398,7 @@ void MasterHistory::fill_in_fixed_cost_info() {
 
                     // Update the rows with the current fixed cost value
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).dbFixedCost = dbCurrentFixedCost;
+                        vecDataRows[iRow].dbFixedCost = dbCurrentFixedCost;
                     }
 
                     // Update the time step and fixed cost
@@ -411,7 +411,7 @@ void MasterHistory::fill_in_fixed_cost_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current fixed cost value
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).dbFixedCost = dbCurrentFixedCost;
+                            vecDataRows[iRow].dbFixedCost = dbCurrentFixedCost;
                         }
                     }
                 } // End of loop through vector of fixed cost changes for current simulation-firm-market combo
@@ -423,14 +423,14 @@ void MasterHistory::fill_in_fixed_cost_info() {
 
 void MasterHistory::fill_in_entry_cost_info() {
     for (int iSim = 0; iSim < vecSimulationHistoryPtrs.size(); iSim++) {
-        auto mapMaximumEntryCosts = vecSimulationHistoryPtrs.at(iSim)->mapMarketMaximumEntryCost;
+        auto mapMaximumEntryCosts = vecSimulationHistoryPtrs[iSim]->mapMarketMaximumEntryCost;
         for (int iFirm = 0; iFirm < iNumFirms; iFirm++) {
             for (int iMarket = 0; iMarket < iNumMarkets; iMarket++) {
 
                 // Get all the changes corresponding to the simulation-firm-market combo
                 vector<EntryCostChange> vecEntryCostChanges;
 
-                for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecEntryCostChanges) {
+                for (auto entry : vecSimulationHistoryPtrs[iSim]->vecEntryCostChanges) {
                     if (entry.iFirmID == iFirm && entry.iMarketID == iMarket) {
                         vecEntryCostChanges.push_back(entry);
                     }
@@ -439,13 +439,13 @@ void MasterHistory::fill_in_entry_cost_info() {
                 // Get the starting entry cost for each sim-firm-market combination
                 // Note that this will have to be changed to not just be the maximum entry cost for the market if the
                 // simulator is modified to allow firms to begin with markets in their portfolios.
-                double dbStartingEntryCost = mapMaximumEntryCosts[iMarket];
+                double dbStartingEntryCost = mapMaximumEntryCosts.at(iMarket);
 
                 // Account for the case when no changes occurred
                 if (vecEntryCostChanges.empty()) {
                     int iStartRow = get_row_number(iSim, iFirm, iMarket, 0);
                     for (int i = 0; i < iMicroStepsPerSim; i++) {
-                        vecDataRows.at(iStartRow + i).dbEntryCost = dbStartingEntryCost;
+                        vecDataRows[iStartRow + i].dbEntryCost = dbStartingEntryCost;
                     }
                 }
 
@@ -462,7 +462,7 @@ void MasterHistory::fill_in_entry_cost_info() {
 
                     // Update the rows with the current entry cost value
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).dbEntryCost = dbCurrentEntryCost;
+                        vecDataRows[iRow].dbEntryCost = dbCurrentEntryCost;
                     }
 
                     // Update the time step and entry cost
@@ -475,7 +475,7 @@ void MasterHistory::fill_in_entry_cost_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current entry cost value
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).dbEntryCost = dbCurrentEntryCost;
+                            vecDataRows[iRow].dbEntryCost = dbCurrentEntryCost;
                         }
                     }
                 } // End of loop through vector of entry cost changes for current simulation-firm-market combo
@@ -493,7 +493,7 @@ void MasterHistory::fill_in_price_info() {
                 // Get all the changes corresponding to the simulation-firm-market combo
                 vector<PriceChange> vecPriceChanges;
 
-                for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecPriceChanges) {
+                for (auto entry : vecSimulationHistoryPtrs[iSim]->vecPriceChanges) {
                     if (entry.iFirmID == iFirm && entry.iMarketID == iMarket) {
                         vecPriceChanges.push_back(entry);
                     }
@@ -508,7 +508,7 @@ void MasterHistory::fill_in_price_info() {
                 if (vecPriceChanges.empty()) {
                     int iStartRow = get_row_number(iSim, iFirm, iMarket, 0);
                     for (int i = 0; i < iMicroStepsPerSim; i++) {
-                        vecDataRows.at(iStartRow + i).dbPrice = dbStartingPrice;
+                        vecDataRows[iStartRow + i].dbPrice = dbStartingPrice;
                     }
                 }
 
@@ -525,7 +525,7 @@ void MasterHistory::fill_in_price_info() {
 
                     // Update the rows with the current price
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).dbPrice = dbCurrentPrice;
+                        vecDataRows[iRow].dbPrice = dbCurrentPrice;
                     }
 
                     // Update the time step and price
@@ -538,7 +538,7 @@ void MasterHistory::fill_in_price_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current price
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).dbPrice = dbCurrentPrice;
+                            vecDataRows[iRow].dbPrice = dbCurrentPrice;
                         }
                     }
                 } // End of loop through vector of price changes for current simulation-firm-market combo
@@ -556,7 +556,7 @@ void MasterHistory::fill_in_quantity_info() {
                 // Get all the changes corresponding to the simulation-firm-market combo
                 vector<ProductionQuantityChange> vecProductionQuantityChanges;
 
-                for (auto entry : vecSimulationHistoryPtrs.at(iSim)->vecProductionQtyChanges) {
+                for (auto entry : vecSimulationHistoryPtrs[iSim]->vecProductionQtyChanges) {
                     if (entry.iFirmID == iFirm && entry.iMarketID == iMarket) {
                         vecProductionQuantityChanges.push_back(entry);
                     }
@@ -571,7 +571,7 @@ void MasterHistory::fill_in_quantity_info() {
                 if (vecProductionQuantityChanges.empty()) {
                     int iStartRow = get_row_number(iSim, iFirm, iMarket, 0);
                     for (int i = 0; i < iMicroStepsPerSim; i++) {
-                        vecDataRows.at(iStartRow + i).dbQty = dbStartingQuantity;
+                        vecDataRows[iStartRow + i].dbQty = dbStartingQuantity;
                     }
                 }
 
@@ -588,7 +588,7 @@ void MasterHistory::fill_in_quantity_info() {
 
                     // Update the rows with the current production quantity
                     for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                        vecDataRows.at(iRow).dbQty = dbCurrentQuantity;
+                        vecDataRows[iRow].dbQty = dbCurrentQuantity;
                     }
 
                     // Update the time step and production quantity
@@ -601,7 +601,7 @@ void MasterHistory::fill_in_quantity_info() {
                         iEndRow = get_row_number(iSim, iFirm, iMarket + 1, 0);
                         // Update the rows with the current production quantity
                         for (int iRow = iStartRow; iRow < iEndRow; iRow++) {
-                            vecDataRows.at(iRow).dbQty = dbCurrentQuantity;
+                            vecDataRows[iRow].dbQty = dbCurrentQuantity;
                         }
                     }
                 } // End of loop through vector of production quantity changes for current simulation-firm-market combo
