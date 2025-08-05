@@ -1,5 +1,6 @@
 #include "StringUtils.h"
 #include <algorithm>
+#include <cctype>
 
 string StringUtils::toUpper(const string& str) {
     string result = str;
@@ -12,7 +13,8 @@ bool StringUtils::equalsIgnoreCase(const string& str1, const string& str2) {
         return false;
     }
     for (size_t i = 0; i < str1.size(); ++i) {
-        if (std::tolower(str1[i]) != std::tolower(str2[i])) {
+        if (std::tolower(static_cast<unsigned char>(str1[i])) !=
+            std::tolower(static_cast<unsigned char>(str2[i]))) {
             return false;
         }
     }

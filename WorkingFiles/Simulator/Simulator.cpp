@@ -586,7 +586,7 @@ int Simulator::perform_micro_step_control_agent_or_skip_turn(const int& iActingA
     try {
         vecActions = get_actions_for_all_agents_control_agent_turn(iActingAgentID);
     }
-    catch (std::exception e) {
+    catch (const std::exception& e) {
         cerr << "Error getting agent actions during micro step " << iCurrentMicroTimeStep << endl;
         cerr << e.what() << endl;
         return 1;
@@ -608,7 +608,7 @@ int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const
     try {
         vecActions = get_actions_for_all_agents_ai_agent_turn(iActingAgentID, iAIAgentActionID);
     }
-    catch (std::exception e) {
+    catch (const std::exception& e) {
         cerr << "Error getting agent actions during micro step " << iCurrentMicroTimeStep << endl;
         cerr << e.what() << endl;
         return 1;
@@ -707,7 +707,7 @@ vector<Action> Simulator::get_actions_for_all_agents_control_agent_turn(const in
                 try {
                     vecActions.emplace_back(get_agent_action(*controlAgentPtr));
                 }
-                catch (std::exception e) {
+                catch (const std::exception& e) {
                     cerr << "Error getting actions for control agents" << e.what() << endl;
                     throw std::exception();
                 }
@@ -1267,7 +1267,7 @@ int Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) {
                 auto pAgent = get_agent_ptr_from_firm_ID(iFirmID);
                 policy = pAgent->get_enum_production_policy();
             }
-            catch (std::exception e) {
+            catch (const std::exception& e) {
                 cerr << "Error in distribute_profits method: " << e.what() << endl;
                 return 1;
             }

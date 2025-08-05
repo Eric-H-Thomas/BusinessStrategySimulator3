@@ -40,7 +40,7 @@ int Firm::add_market_capabilities_to_firm_capabilities(const Market& market) {
         // Set firm capability vector to (firmCapVec ORed with marketCapVec)
         this->vecCapabilities = MiscUtils::element_wise_logical_or(this->vecCapabilities, market.get_vec_capabilities());
     }
-    catch (std::exception e) {
+    catch (const std::exception& e) {
         std::cerr << "Error adding market capabilities to firm capabilities" << std::endl;
         return 1;
     }
@@ -71,7 +71,7 @@ int Firm::remove_market_capabilities_from_firm_capabilities(const Market& market
         // Change all positive entries in the vector to a 1
         MiscUtils::set_all_positive_values_to_one(capabilitiesVector);
     }
-    catch (std::exception e) {
+    catch (const std::exception& e) {
         std::cerr << "Error removing market capabilities from firm capabilities" << std::endl;
         return 1;
     }
