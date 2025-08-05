@@ -19,6 +19,7 @@ This class stores current values for
     - the fixed cost            in the most recent micro time step for each firm-market combination
     - the variable cost         in the most recent micro time step for each firm-market combination
     - the entry cost            in the most recent micro time step for each firm-market combination
+    - the exit cost             in the most recent micro time step for each firm-market combination
     - the quantity produced     in the most recent micro time step for each firm-market combination
     - the price per unit        in the most recent micro time step for each firm-market combination
 
@@ -37,6 +38,7 @@ public:
     map<pair<int, int>, double> mapFirmMarketComboToFixedCost;
     map<pair<int, int>, double> mapFirmMarketComboToVarCost;
     map<pair<int, int>, double> mapFirmMarketComboToEntryCost;
+    map<pair<int, int>, double> mapFirmMarketComboToExitCost;
     map<pair<int, int>, double> mapFirmMarketComboToQtyProduced;
     map<pair<int, int>, double> mapFirmMarketComboToPrice;
 };
