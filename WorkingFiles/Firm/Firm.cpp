@@ -52,6 +52,12 @@ int Firm::remove_market_capabilities_from_firm_capabilities(const Market& market
     // Begin with an empty capabilities vector
     vector<int> capabilitiesVector(vecCapabilities.size(), 0);
 
+    // Ensure the market exists in the firm's portfolio before proceeding
+    if (setMarketIDs.find(marketToRemove.get_market_id()) == setMarketIDs.end()) {
+        std::cerr << "Error removing market capabilities from firm capabilities: market not in portfolio" << std::endl;
+        return 1;
+    }
+
     try {
         // Iterate through every market in the firm's portfolio, counting how many markets require each capability
         for (auto marketID : setMarketIDs) {
