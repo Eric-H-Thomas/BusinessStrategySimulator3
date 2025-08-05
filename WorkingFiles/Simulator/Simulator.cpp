@@ -813,6 +813,18 @@ int Simulator::execute_entry_action(const Action& action, map<int, double>* pMap
     auto pairFirmMarket = std::make_pair(firmPtr->getFirmID(), action.iMarketID);
     double dbEntryCost = dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket);
 
+    // Ensure the firm has enough capital to cover the entry cost
+    double dbCurrentCapital = firmPtr->getDbCapital();
+    if (dbCurrentCapital < dbEntryCost) {
+        if (bVerbose) {
+            cout << "Firm " << firmPtr->getFirmID()
+                 << " lacks sufficient capital to enter market " << action.iMarketID
+                 << ". Required: " << dbEntryCost
+                 << ", available: " << dbCurrentCapital << endl;
+        }
+        return 0; // Skip action due to insufficient funds
+    }
+
     // Update capital within the firm object
     firmPtr->add_capital(-dbEntryCost);
 
