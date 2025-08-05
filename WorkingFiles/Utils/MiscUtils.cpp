@@ -123,6 +123,11 @@ double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vec
 }
 
 template <typename T> T MiscUtils::choose_random_from_set(const std::set<T>& inputSet) {
+    // Check for an empty set
+    if (inputSet.empty()) {
+        throw std::invalid_argument("choose_random_from_set: empty set");
+    }
+
     // Convert the set to a vector
     std::vector<T> myVector(inputSet.begin(), inputSet.end());
 

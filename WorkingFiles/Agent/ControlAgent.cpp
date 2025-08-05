@@ -11,7 +11,7 @@ using std::endl;
 using std::vector;
 using std::cerr;
 
-#define NOT_YET_SET -1
+#define NOT_YET_SET (-1)
 
 ControlAgent::ControlAgent(const int& iAgentID, const string& strEntryPolicy,
                            const string& strExitPolicy, const string& strProductionPolicy,

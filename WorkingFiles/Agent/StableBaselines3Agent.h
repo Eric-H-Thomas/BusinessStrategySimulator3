@@ -13,8 +13,8 @@ using std::endl;
 class StableBaselines3Agent : public BaseAgent {
 public:
     StableBaselines3Agent(int iAgentID, ProductionPolicy productionPolicy, string strPathToAgent);
-    ProductionPolicy get_enum_production_policy() const override;
-    string to_string() const override;
+    [[nodiscard]] ProductionPolicy get_enum_production_policy() const override;
+    [[nodiscard]] string to_string() const override;
 
 private:
     ProductionPolicy enumProductionPolicy;

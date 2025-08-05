@@ -4,7 +4,7 @@
 
 #include "Action.h"
 
-#define NOT_APPLICABLE -1
+#define NOT_APPLICABLE (-1)
 
 Action Action::generate_none_action(int iAgentID) {
     return {iAgentID, ActionType::enumNoneAction, NOT_APPLICABLE};

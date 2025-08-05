@@ -310,7 +310,7 @@ int Simulator::init_AI_agents() {
                 }
                 else {
                     std::cerr << "AI agent production type not yet supported" << std::endl;
-                    throw new std::exception();
+                    throw std::exception();
                 }
 
             }
@@ -396,8 +396,6 @@ void Simulator::shuffle_agent_firm_assignments() {
 int Simulator::init_markets() {
     try {
         const auto& market_parameters = this->simulatorConfigs["default_market_parameters"];
-        double dbVarCostMin = market_parameters["variable_cost_min"];
-        double dbVarCostMax = market_parameters["variable_cost_max"];
         double dbFixedCostPercentageOfEntry = market_parameters["fixed_cost_percentage_of_entry"];
         double dbExitCostPercentageOfEntry = market_parameters["exit_cost_percentage_of_entry"];
         double dbDemandInterceptMax = market_parameters["demand_intercept_max"];
@@ -449,8 +447,6 @@ int Simulator::reset_markets() {
     try {
         this->economy.clear_markets();
         const auto& market_parameters = this->simulatorConfigs["default_market_parameters"];
-        double dbVarCostMin = market_parameters["variable_cost_min"];
-        double dbVarCostMax = market_parameters["variable_cost_max"];
         double dbFixedCostPercentageOfEntry = market_parameters["fixed_cost_percentage_of_entry"];
         double dbExitCostPercentageOfEntry = market_parameters["exit_cost_percentage_of_entry"];
         double dbDemandInterceptMax = market_parameters["demand_intercept_max"];
@@ -847,7 +843,8 @@ int Simulator::execute_entry_action(const Action& action, map<int, double>* pMap
     dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = dbExitCost;
 
     // Update the firm's capability vector
-    firmPtr->add_market_capabilities_to_firm_capabilities(economy.get_market_by_ID(action.iMarketID));
+    if (firmPtr->add_market_capabilities_to_firm_capabilities(economy.get_market_by_ID(action.iMarketID)))
+        return 1;
 
     // Add this market to the firm's portfolio and record this change in the history
     if (firmPtr->add_market_to_portfolio(action.iMarketID))
@@ -916,7 +913,9 @@ int Simulator::execute_exit_action(const Action& action, map<int, double>* pMapF
                                                           0.0, pairFirmMarket.first, pairFirmMarket.second);
 
     // Update the firm's capability vector
-    firmPtr->remove_market_capabilities_from_firm_capabilities(marketCopy, economy);
+    if (firmPtr->remove_market_capabilities_from_firm_capabilities(marketCopy, economy)) {
+        return 1;
+    }
 
     // Remove this market from the firm's portfolio and record this change in the history
     if (firmPtr->remove_market_from_portfolio(action.iMarketID))

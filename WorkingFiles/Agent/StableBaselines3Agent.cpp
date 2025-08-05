@@ -3,6 +3,8 @@
 //
 
 #include "StableBaselines3Agent.h"
+
+#include <utility>
 StableBaselines3Agent::StableBaselines3Agent(int iAgentID, ProductionPolicy productionPolicy, string strPathToAgent) {
     // Set the agent type
     this->enumAgentType = AgentType::StableBaselines3;
@@ -12,7 +14,7 @@ StableBaselines3Agent::StableBaselines3Agent(int iAgentID, ProductionPolicy prod
     this->enumProductionPolicy = productionPolicy;
 
     // Set the path to the agent
-    this->strPathToAgent = strPathToAgent;
+    this->strPathToAgent = std::move(strPathToAgent);
 }
 
 ProductionPolicy StableBaselines3Agent::get_enum_production_policy() const {
