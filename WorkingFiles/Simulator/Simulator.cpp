@@ -122,9 +122,10 @@ int Simulator::reset() {
         this->reset_markets();
     }
 
-    // Set current micro time step and macro time step to 0
+    // Set current micro time step, macro time step, and number of AI turns to 0
     iCurrentMicroTimeStep = 0;
     iCurrentMacroTimeStep = 0;
+    iNumAITurns = 0;
 
     // Reset capabilities, portfolio, and capital for all firms
     for (auto pair : mapFirmIDToFirmPtr) {
@@ -1032,7 +1033,7 @@ Action Simulator::get_exit_action(const ControlAgent& agent) {
         double dbLowestProfit = std::numeric_limits<double>::infinity();
 
         int iFirmID = this->get_firm_ptr_from_agent(agent)->getFirmID();
-        for (int iMarketID : this->get_set_market_IDs()) {
+        for (int iMarketID : firmPtr->getSetMarketIDs()) {
             auto pairFirmMarket = std::make_pair(iFirmID, iMarketID);
             double dbRev = dataCache.mapFirmMarketComboToRevenue[pairFirmMarket];
             double dbFixedCost = dataCache.mapFirmMarketComboToFixedCost[pairFirmMarket];

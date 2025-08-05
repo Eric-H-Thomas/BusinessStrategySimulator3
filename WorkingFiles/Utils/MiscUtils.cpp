@@ -15,6 +15,18 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
         return -1; // Return an error code
     }
 
+
+    // Check that the probabilities sum to 100 (probabilities are given as whole percentages)
+    double dbSum = 0.0;
+    for (double probability : probabilities) {
+        dbSum += probability;
+    }
+    if (abs(100.0 - dbSum) > 1E-12) { // Allow for tiny numerical imprecision
+        std::cerr << "Error: Probabilities vector does not sum to 100." << std::endl;
+        return -1; // Return an error code
+    }
+
+
     // Calculate the cumulative probabilities
     std::vector<double> cumulativeProbabilities(probabilities.size());
     cumulativeProbabilities[0] = probabilities[0];
@@ -22,10 +34,10 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
         cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + probabilities[i];
     }
 
-    // Generate a random number between 0 and 1
+    // Generate a random number between 0 and 100 (probabilities are given as whole percentages)
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    std::uniform_real_distribution<double> distribution(0.0, 100.0);
     double randomValue = distribution(gen);
 
     // Find the index corresponding to the random value
@@ -130,6 +142,12 @@ template Market MiscUtils::choose_random_from_set(const std::set<Market>& inputS
 template int MiscUtils::choose_random_from_set(const std::set<int>& inputSet);
 
 double MiscUtils::get_percentage_overlap(const std::vector<int>& vector1, const std::vector<int>& vector2) {
+    // Check that the vectors are of the same size
+    if (vector1.size() != vector2.size()) {
+        std::cerr << "Error: Attempted to calculate percentage overlap with differently sized vectors." << std::endl;
+        return -1; // Return an error code
+    }
+
     // Initialize a counter for the overlap
     int overlapCount = 0;
 
