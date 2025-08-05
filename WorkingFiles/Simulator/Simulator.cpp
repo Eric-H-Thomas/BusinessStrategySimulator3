@@ -113,13 +113,23 @@ int Simulator::prepare_to_run() {
 
 int Simulator::reset() {
 
-    // Reset the economy and markets if their corresponding randomization options are set to true
+    // Reset the economy and always regenerate markets whenever the economy changes.
+    // Markets may also be regenerated independently if the corresponding flag is set.
     if (this->bRandomizeEconomyPerSimulation) {
-        this->reset_economy();
+        if (this->reset_economy())
+            return 1;
+        if (this->reset_markets())
+            return 1;
+    }
+    else if (this->bRandomizeMarketsPerSimulation) {
+        if (this->reset_markets())
+            return 1;
     }
 
-    if (this->bRandomizeMarketsPerSimulation) {
-        this->reset_markets();
+    // Ensure that the economy has markets after any reset
+    if (this->economy.get_vec_markets().empty()) {
+        cerr << "Error: economy contains no markets after reset" << endl;
+        return 1;
     }
 
     // Clear out the agent turn order
@@ -173,6 +183,8 @@ int Simulator::set_simulation_parameters() {
         this->bRandomizeAgentFirmAssignmentPerSimulation = simulation_parameters["randomize_agent_firm_assignment_per_simulation"];
         this->bRandomizeVariableCostsPerSimulation = simulation_parameters["randomize_variable_costs_per_simulation"];
         this->bRandomizeEconomyPerSimulation = simulation_parameters["randomize_economy_per_simulation"];
+        // Markets are always regenerated when the economy is randomized. This flag controls
+        // additional market randomization when the economy remains unchanged between simulations.
         this->bRandomizeMarketsPerSimulation = simulation_parameters["randomize_markets_per_simulation"];
     }
 
