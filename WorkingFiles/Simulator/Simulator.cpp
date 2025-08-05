@@ -773,11 +773,11 @@ Action Simulator::convert_action_ID_to_action_object(const int& iActingAgentID, 
     auto firmPtr = get_firm_ptr_from_agent_id(iActingAgentID);
     if (firmPtr->is_in_market(economy.get_market_by_ID(iAIAgentActionID))) {
         // Firm is present in the given market and needs to be removed
-        return Action(iActingAgentID, ActionType::enumExitAction, iAIAgentActionID, iCurrentMicroTimeStep);
+        return {iActingAgentID, ActionType::enumExitAction, iAIAgentActionID};
     }
     else {
         // Firm is not present in the given market and needs to be added
-        return Action(iActingAgentID, ActionType::enumEntryAction, iAIAgentActionID, iCurrentMicroTimeStep);
+        return {iActingAgentID, ActionType::enumEntryAction, iAIAgentActionID};
     }
 }
 
@@ -852,7 +852,7 @@ int Simulator::execute_entry_action(const Action& action, map<int, double>* pMap
     // Add this market to the firm's portfolio and record this change in the history
     if (firmPtr->add_market_to_portfolio(action.iMarketID))
         return 1;
-    currentSimulationHistoryPtr->record_market_presence_change(action.iMicroTimeStep, true, firmPtr->getFirmID(), action.iMarketID);
+    currentSimulationHistoryPtr->record_market_presence_change(iCurrentMicroTimeStep, true, firmPtr->getFirmID(), action.iMarketID);
 
     // Update the entry cost for this firm for all markets
     for (Market market : economy.get_vec_markets()) {
@@ -921,7 +921,7 @@ int Simulator::execute_exit_action(const Action& action, map<int, double>* pMapF
     // Remove this market from the firm's portfolio and record this change in the history
     if (firmPtr->remove_market_from_portfolio(action.iMarketID))
         return 1;
-    currentSimulationHistoryPtr->record_market_presence_change(action.iMicroTimeStep, false, firmPtr->getFirmID(), action.iMarketID);
+    currentSimulationHistoryPtr->record_market_presence_change(iCurrentMicroTimeStep, false, firmPtr->getFirmID(), action.iMarketID);
 
     // Update the entry cost for this firm for each market
     for (Market market : economy.get_vec_markets()) {
@@ -1043,7 +1043,7 @@ Action Simulator::get_entry_action(const ControlAgent& agent) {
     }
 
     // Construct and return the action object
-    return Action(agent.get_agent_ID(), ActionType::enumEntryAction, finalChoiceMarket.get_market_id(), iCurrentMicroTimeStep);
+    return {agent.get_agent_ID(), ActionType::enumEntryAction, finalChoiceMarket.get_market_id()};
 }
 
 Action Simulator::get_exit_action(const ControlAgent& agent) {
@@ -1090,7 +1090,7 @@ Action Simulator::get_exit_action(const ControlAgent& agent) {
     }
 
     // Construct and return the action object
-    return Action(agent.get_agent_ID(), ActionType::enumExitAction, iFinalChoiceMarketID, iCurrentMicroTimeStep);
+    return {agent.get_agent_ID(), ActionType::enumExitAction, iFinalChoiceMarketID};
 }
 
 void Simulator::init_simulation_history() {
@@ -1208,7 +1208,7 @@ Firm* Simulator::get_firm_ptr_from_agent_ptr(BaseAgent* agentPtr) {
 }
 
 Firm* Simulator::get_firm_ptr_from_agent_id(const int& iAgentID) {
-    auto agentPtr = mapAgentIDToAgentPtr[iAgentID];
+    auto agentPtr = mapAgentIDToAgentPtr.at(iAgentID);
     int iFirmID = agentPtr->iFirmAssignment;
     return mapFirmIDToFirmPtr.at(iFirmID);
 }

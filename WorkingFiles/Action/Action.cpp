@@ -7,17 +7,9 @@
 #define NOT_APPLICABLE -1
 
 Action Action::generate_none_action(int iAgentID) {
-    Action action;
-    action.iAgentID = iAgentID;
-    action.enumActionType = ActionType::enumNoneAction;
-    action.iMarketID = NOT_APPLICABLE;
-    action.iMicroTimeStep = NOT_APPLICABLE;
-    return action;
+    return {iAgentID, ActionType::enumNoneAction, NOT_APPLICABLE};
 }
 
 // Constructors
-Action::Action() {}
-Action::Action(int iAgentId, ActionType enumActionType, int iMarketId, int iMicroTimeStep) : iAgentID(iAgentId),
-                                                                                             enumActionType(enumActionType),
-                                                                                             iMarketID(iMarketId),
-                                                                                             iMicroTimeStep(iMicroTimeStep) {}
+Action::Action(int iAgentId, ActionType enumActionType, int iMarketId) :
+        iAgentID(iAgentId), enumActionType(enumActionType), iMarketID(iMarketId) {}
