@@ -670,6 +670,7 @@ int Simulator::perform_micro_step_helper(vector<Action> vecActions) {
                 dataCache.mapFirmMarketComboToFixedCost[pairFirmMarket] = 0.0;
                 dataCache.mapFirmMarketComboToVarCost[pairFirmMarket] = 0.0;
                 dataCache.mapFirmMarketComboToEntryCost[pairFirmMarket] = 0.0;
+                dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = 0.0;
                 dataCache.mapFirmMarketComboToQtyProduced[pairFirmMarket] = 0.0;
                 dataCache.mapFirmMarketComboToPrice[pairFirmMarket] = 0.0; // Will need to be made dynamic if the simulator is ever allowed to have more than one price per market
             }
@@ -815,6 +816,12 @@ int Simulator::execute_entry_action(const Action& action, map<int, double>* pMap
     currentSimulationHistoryPtr->record_fixed_cost_change(iCurrentMicroTimeStep,
                                                           dbFixedCost, pairFirmMarket.first, pairFirmMarket.second);
 
+    // Calculate and store the exit cost for this firm-market combo
+    double dbExitCostAsPctOfEntryCost = marketCopy.getExitCostAsPercentageOfEntryCost();
+    dbExitCostAsPctOfEntryCost *= 0.01; // Scaling factor for percentage expressed as whole number
+    double dbExitCost = dbExitCostAsPctOfEntryCost * dbEntryCost;
+    dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = dbExitCost;
+
     // Update the firm's capability vector
     firmPtr->add_market_capabilities_to_firm_capabilities(economy.get_market_by_ID(action.iMarketID));
 
@@ -871,8 +878,7 @@ int Simulator::execute_exit_action(const Action& action, map<int, double>* pMapF
     // Get the exit cost for the firm
     auto firmPtr = get_firm_ptr_from_agent_id(action.iAgentID);
     auto pairFirmMarket = std::make_pair(firmPtr->getFirmID(), action.iMarketID);
-    double dbEntryCost = dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket);
-    double dbExitCost = marketCopy.getExitCostAsPercentageOfEntryCost() * dbEntryCost * 0.01; // Scaling factor due to whole percentages
+    double dbExitCost = dataCache.mapFirmMarketComboToExitCost.at(pairFirmMarket);
 
     // Update capital within the firm object
     firmPtr->add_capital(-dbExitCost);
@@ -938,6 +944,7 @@ int Simulator::execute_exit_action(const Action& action, map<int, double>* pMapF
     dataCache.mapFirmMarketComboToRevenue[pairFirmMarket] = 0.0;
     dataCache.mapFirmMarketComboToPrice[pairFirmMarket] = 0.0;
     dataCache.mapFirmMarketComboToQtyProduced[pairFirmMarket] = 0.0;
+    dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = 0.0;
 
     return 0;
 }
@@ -1155,6 +1162,7 @@ int Simulator::init_data_cache(SimulationHistory* pCurrentSimulationHistory) {
             int iMarketID = combination.second;
             double dbEntryCost = pCurrentSimulationHistory->mapMarketMaximumEntryCost[iMarketID];
             dataCache.mapFirmMarketComboToEntryCost[combination] = dbEntryCost;
+            dataCache.mapFirmMarketComboToExitCost[combination] = 0.0;
         }
 
         // Mark the data cache as having been initialized
