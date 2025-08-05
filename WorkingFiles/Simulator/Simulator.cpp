@@ -9,6 +9,7 @@
 #include <random>
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
 
 using std::map;
 using std::vector;
@@ -525,8 +526,16 @@ vector<int> Simulator::create_market_capability_vector(const double& dbMean, con
         int iAttempts = 0;
         while (!bDone) {
             iAttempts++;
+            // Detect impossible placement to avoid infinite looping
+            bool bNoZeroEntries =
+                    std::find(vecCapabilities.begin(), vecCapabilities.end(), 0) == vecCapabilities.end();
+            if (iAttempts > static_cast<int>(vecCapabilities.size()) || bNoZeroEntries) {
+                throw std::runtime_error("Failed to assign market capability: no available slots remain");
+            }
+
             // If the vector is defined at the index of that integer and contains a 0
-            if (iRoundedValue >= 0 && iRoundedValue < vecCapabilities.size() && vecCapabilities.at(iRoundedValue) == 0) {
+            if (iRoundedValue >= 0 && iRoundedValue < static_cast<int>(vecCapabilities.size()) &&
+                vecCapabilities.at(iRoundedValue) == 0) {
                 vecCapabilities.at(iRoundedValue) = 1;
                 bDone = true;
             }
