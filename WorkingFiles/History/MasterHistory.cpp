@@ -134,8 +134,20 @@ void MasterHistory::prepare_data_for_output() {
     int iNumRows = static_cast<int>(vecSimulationHistoryPtrs.size()) * iNumFirms * iNumMarkets * iMicroStepsPerSim;
     vecDataRows.resize(iNumRows);
 
-    // TODO: factor this out into a separate function
     // Fill in the simulation number, firm ID, agent type, market ID, and time step
+    fill_in_identifier_info();
+
+    fill_in_capital_info();
+    fill_in_revenue_info();
+    fill_in_market_presence_info();
+    fill_in_variable_cost_info(); // Note that variable costs MUST be filled in after market presence has been filled in
+    fill_in_fixed_cost_info();
+    fill_in_entry_cost_info();
+    fill_in_price_info();
+    fill_in_quantity_info();
+}
+
+void MasterHistory::fill_in_identifier_info() {
     for (int iSim = 0; iSim < vecSimulationHistoryPtrs.size(); iSim++) {
         for (int iFirm = 0; iFirm < iNumFirms; iFirm++) {
             for (int iMarket = 0; iMarket < iNumMarkets; iMarket++) {
@@ -150,15 +162,6 @@ void MasterHistory::prepare_data_for_output() {
             }
         }
     }
-
-    fill_in_capital_info();
-    fill_in_revenue_info();
-    fill_in_market_presence_info();
-    fill_in_variable_cost_info(); // Note that variable costs MUST be filled in after market presence has been filled in
-    fill_in_fixed_cost_info();
-    fill_in_entry_cost_info();
-    fill_in_price_info();
-    fill_in_quantity_info();
 }
 
 void MasterHistory::fill_in_capital_info() {
