@@ -4,7 +4,10 @@
 
 string StringUtils::toUpper(const string& str) {
     string result = str;
-    std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) -> char {
+                       return static_cast<char>(std::toupper(c));
+                   });
     return result;
 }
 
