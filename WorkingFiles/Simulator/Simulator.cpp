@@ -1839,7 +1839,7 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
 [[maybe_unused]] int Simulator::get_next_AI_agent_index() {
     if (iNumAIAgents == 0) {
         // No AI agents available to act
-        return -1;
+        throw std::runtime_error("get_next_AI_agent_index called with no AI agents");
     }
 
     int iAIAgentNumber = iNumAITurns % iNumAIAgents; // Which, of all the AI agents, is acting?
@@ -1859,8 +1859,7 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
     }
 
     // Shouldn't reach this part of the code
-    cerr << "Error in Simulator::get_next_AI_agent_index()" << endl;
-    throw std::exception();
+    throw std::runtime_error("get_next_AI_agent_index failed to find next agent");
 }
 
 // Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
