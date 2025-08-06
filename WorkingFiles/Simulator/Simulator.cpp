@@ -151,8 +151,14 @@ int Simulator::reset() {
 
     // Initialize the history and the data cache
     init_simulation_history();
-    if (init_data_cache(masterHistory.getCurrentSimulationHistoryPtr()))
+    try {
+        if (init_data_cache(masterHistory.getCurrentSimulationHistoryPtr()))
+            return 1;
+    }
+    catch (const std::runtime_error& e) {
+        cerr << "Error retrieving current simulation history: " << e.what() << endl;
         return 1;
+    }
 
     // Initialize maps for tracking statistics necessary for AI reward calculations
     for (auto pair : mapAgentIDToAgentPtr) {
