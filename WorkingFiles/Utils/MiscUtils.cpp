@@ -8,14 +8,13 @@
 #include <vector>
 #include <random>
 #include <cmath>
+#include <stdexcept>
 
 int MiscUtils::choose_index_given_probabilities(const std::vector<double>& probabilities) {
     // Check if the probabilities vector is empty
     if (probabilities.empty()) {
-        std::cerr << "Error: Probabilities vector is empty." << std::endl;
-        return -1; // Return an error code
+        throw std::invalid_argument("choose_index_given_probabilities: empty probability vector");
     }
-
 
     // Check that the probabilities sum to 100 (probabilities are given as whole percentages)
     double dbSum = 0.0;
@@ -23,8 +22,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
         dbSum += probability;
     }
     if (std::fabs(100.0 - dbSum) > 1E-12) { // Allow for tiny numerical imprecision
-        std::cerr << "Error: Probabilities vector does not sum to 100." << std::endl;
-        return -1; // Return an error code
+        throw std::invalid_argument("choose_index_given_probabilities: probabilities must sum to 100");
     }
 
 
@@ -49,8 +47,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
     }
 
     // In case something goes wrong (shouldn't happen)
-    std::cerr << "Error: Unable to choose an index." << std::endl;
-    throw std::exception();
+    throw std::runtime_error("choose_index_given_probabilities: unable to choose an index");
 }
 
 
@@ -150,8 +147,8 @@ template int MiscUtils::choose_random_from_set(const std::set<int>& inputSet);
 double MiscUtils::get_percentage_overlap(const std::vector<int>& vector1, const std::vector<int>& vector2) {
     // Check that the vectors are of the same size and nonempty
     if (vector1.size() != vector2.size() || vector1.empty()) {
-        std::cerr << "Error: Attempted to calculate percentage overlap with differently sized and/or empty vectors." << std::endl;
-        return -1; // Return an error code
+        throw std::invalid_argument(
+                "get_percentage_overlap: vectors must be non-empty and of equal size");
     }
 
     // Initialize a counter for the overlap
