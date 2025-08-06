@@ -18,10 +18,10 @@ public:
     double getDbCapital() const;
     const vector<int>& getVecCapabilities() const;
     void add_capital(double dbChangeInCapital);
-    int add_market_to_portfolio(const int& iMarketID);
-    int add_market_capabilities_to_firm_capabilities(const Market& market);
-    int remove_market_capabilities_from_firm_capabilities(const Market& marketToRemove, const Economy& economy);
-    int remove_market_from_portfolio(const int& iMarketID);
+    void add_market_to_portfolio(const int& iMarketID);
+    void add_market_capabilities_to_firm_capabilities(const Market& market);
+    void remove_market_capabilities_from_firm_capabilities(const Market& marketToRemove, const Economy& economy);
+    void remove_market_from_portfolio(const int& iMarketID);
     bool is_in_market(const Market& market);
     Market choose_market_with_highest_overlap(const set<Market>& setMarkets);
     const set<int>& getSetMarketIDs() const;

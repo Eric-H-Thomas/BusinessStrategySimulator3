@@ -3,6 +3,8 @@
 //
 
 #include "Firm.h"
+#include <stdexcept>
+#include <string>
 
 Firm::Firm(int iFirmID, double dbStartingCapital, int iPossibleCapabilities) {
     this->iFirmID = iFirmID;
@@ -25,35 +27,29 @@ bool Firm::is_in_market(const Market& market) {
     return false;
 }
 
-int Firm::add_market_to_portfolio(const int& iMarketID) {
+void Firm::add_market_to_portfolio(const int& iMarketID) {
     if (!this->setMarketIDs.insert(iMarketID).second) {
-        std::cerr << "Unsuccessful market entry" << std::endl;
-        return 1;
+        throw std::runtime_error("Unsuccessful market entry");
     }
-    return 0;
 }
 
-int Firm::add_market_capabilities_to_firm_capabilities(const Market& market) {
+void Firm::add_market_capabilities_to_firm_capabilities(const Market& market) {
     try {
         // Set firm capability vector to (firmCapVec ORed with marketCapVec)
         this->vecCapabilities = MiscUtils::element_wise_logical_or(this->vecCapabilities, market.get_vec_capabilities());
     }
     catch (const std::exception& e) {
-        std::cerr << "Error adding market capabilities to firm capabilities" << std::endl;
-        return 1;
+        throw std::runtime_error(std::string("Error adding market capabilities to firm capabilities: ") + e.what());
     }
-
-    return 0;
 }
 
-int Firm::remove_market_capabilities_from_firm_capabilities(const Market& marketToRemove, const Economy& economy) {
+void Firm::remove_market_capabilities_from_firm_capabilities(const Market& marketToRemove, const Economy& economy) {
     // Begin with an empty capabilities vector
     vector<int> capabilitiesVector(vecCapabilities.size(), 0);
 
     // Ensure the market exists in the firm's portfolio before proceeding
     if (setMarketIDs.find(marketToRemove.get_market_id()) == setMarketIDs.end()) {
-        std::cerr << "Error removing market capabilities from firm capabilities: market not in portfolio" << std::endl;
-        return 1;
+        throw std::runtime_error("Error removing market capabilities from firm capabilities: market not in portfolio");
     }
 
     try {
@@ -70,22 +66,17 @@ int Firm::remove_market_capabilities_from_firm_capabilities(const Market& market
         MiscUtils::set_all_positive_values_to_one(capabilitiesVector);
     }
     catch (const std::exception& e) {
-        std::cerr << "Error removing market capabilities from firm capabilities" << std::endl;
-        return 1;
+        throw std::runtime_error(std::string("Error removing market capabilities from firm capabilities: ") + e.what());
     }
 
     // Save the result as the new capability vector for the firm
     this->vecCapabilities = capabilitiesVector;
-
-    return 0;
 }
 
-int Firm::remove_market_from_portfolio(const int& iMarketID) {
+void Firm::remove_market_from_portfolio(const int& iMarketID) {
     if (this->setMarketIDs.erase(iMarketID) == 0) {
-        std::cerr << "Unsuccessful market exit" << std::endl;
-        return 1;
+        throw std::runtime_error("Unsuccessful market exit");
     }
-    return 0;
 }
 
 Market Firm::choose_market_with_highest_overlap(const set<Market>& setMarkets) {

@@ -15,8 +15,8 @@ public:
     vector<SimulationHistory*> vecSimulationHistoryPtrs;
     SimulationHistory* getCurrentSimulationHistoryPtr();
     void prepare_data_for_output();
-    int generate_master_output();
-    int generate_market_overlap_file();
+    void generate_master_output();
+    void generate_market_overlap_file();
     vector<DataRow> vecDataRows;
 
     // Data needed to prepare the master output file
