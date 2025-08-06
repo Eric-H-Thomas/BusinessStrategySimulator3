@@ -27,15 +27,15 @@ class Simulator {
 public:
     Simulator();
     bool bTrainingMode = false; // Only turn this on from within the Python API
-    int load_json_configs(const string& strConfigFilePath);
+    void load_json_configs(const string& strConfigFilePath);
     void init_master_history();
     void init_simulation_history();
     int init_data_cache(SimulationHistory* pCurrentSimulationHistory);
-    int prepare_to_run();
+    void prepare_to_run();
     void set_agent_turn_order();
     // vector<int> get_agent_turn_order();
     int reset();
-    int run();
+    void run();
     int get_num_sims() const;
     // int get_macro_steps_per_sim() const;
     int iCurrentMacroTimeStep = 0;
@@ -43,8 +43,8 @@ public:
     MasterHistory masterHistory;
     bool bVerbose{};
     bool bGenerateMasterOutput{};
-    int perform_micro_step_control_agent_or_skip_turn(const int& iActingAgentID);
-    int perform_micro_step_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID);
+    void perform_micro_step_control_agent_or_skip_turn(const int& iActingAgentID);
+    void perform_micro_step_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID);
     int perform_micro_step_helper(const vector<Action>& vecActions);
     int get_micro_steps_per_macro_step();
     bool is_ai_agent(const int& iAgentID);
@@ -101,15 +101,15 @@ private:
     int iNumAIAgents = 0;
     int iNumAITurns = 0;
 
-    int init_control_agents();
-    int init_AI_agents();
-    int init_economy();
-    int init_markets();
+    void init_control_agents();
+    void init_AI_agents();
+    void init_economy();
+    void init_markets();
     int reset_economy();
     int reset_markets();
-    int set_simulation_parameters();
+    void set_simulation_parameters();
     // int set_fixed_cost_for_existence();
-    int init_firms_for_agents();
+    void init_firms_for_agents();
     vector<int> create_market_capability_vector(const double& dbMean, const double& dbSD);
     vector<Action> get_actions_for_all_agents_control_agent_turn(const int& iActingAgentID);
     vector<Action> get_actions_for_all_agents_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID);

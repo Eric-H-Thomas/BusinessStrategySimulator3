@@ -10,6 +10,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <string>
 
 using std::map;
 using std::vector;
@@ -22,7 +23,7 @@ Note that the run method should not be used while training AI agents! This metho
 involving heuristic agents and/or trained AI agents.
 */
 
-int Simulator::run() {
+void Simulator::run() {
     // Loop through the macro steps
     for (int iMacroStep = 0; iMacroStep < iMacroStepsPerSim; iMacroStep++) {
         if (bVerbose) cout << "Beginning macro step " << iMacroStep + 1 << " of " << iMacroStepsPerSim << endl;
@@ -32,8 +33,7 @@ int Simulator::run() {
         // Loop through the micro steps
         for (int iAgentID : vecAgentTurnOrder) {
             if (!is_ai_agent(iAgentID)) {
-                if (perform_micro_step_control_agent_or_skip_turn(iAgentID))
-                    return 1;
+                perform_micro_step_control_agent_or_skip_turn(iAgentID);
             }
             else { // (is AI agent)
 
@@ -42,14 +42,10 @@ int Simulator::run() {
                 int action = 0;
 
                 // Execute the micro step with the action chosen by the AI agent
-                if (perform_micro_step_ai_agent_turn(iAgentID, action)) {
-                    return 1;
-                }
+                perform_micro_step_ai_agent_turn(iAgentID, action);
             }
         }
     }
-
-    return 0;
 }
 
 Simulator::Simulator() = default;
@@ -60,13 +56,12 @@ int Simulator::get_num_sims() const { return iNumSims; }
 // vector<int> Simulator::get_agent_turn_order() { return vecAgentTurnOrder; }
 
 
-int Simulator::load_json_configs(const string& strConfigFilePath) {
+void Simulator::load_json_configs(const string& strConfigFilePath) {
 
     // Read the JSONReader file
     std::ifstream file(strConfigFilePath);
     if (!file.is_open()) {
-        cout << "Error reading json config file\n";
-        return 1;
+        throw std::runtime_error("Error reading json config file");
     }
 
     // Parse JSONReader data
@@ -75,32 +70,23 @@ int Simulator::load_json_configs(const string& strConfigFilePath) {
     }
     catch (const nlohmann::json::exception& e) {
         // Handle JSONReader parsing error
-        cerr << "JSONReader parsing error: " << e.what() << endl;
-        return 1;
+        throw std::runtime_error(std::string("JSON parsing error: ") + e.what());
     }
-
-    return 0;
 }
 
-int Simulator::prepare_to_run() {
+void Simulator::prepare_to_run() {
 
-    if (set_simulation_parameters())
-        return 1;
+    set_simulation_parameters();
 
-    if (init_economy())
-        return 1;
+    init_economy();
 
-    if (init_markets())
-        return 1;
+    init_markets();
 
-    if (init_control_agents())
-        return 1;
+    init_control_agents();
 
-    if (init_AI_agents())
-        return 1;
+    init_AI_agents();
 
-    if (init_firms_for_agents())
-        return 1;
+    init_firms_for_agents();
 
 //    if (bFixedCostForExistence) {
 //        if (set_fixed_cost_for_existence())
@@ -108,8 +94,6 @@ int Simulator::prepare_to_run() {
 //    }
 
     init_master_history();
-
-    return 0;
 }
 
 int Simulator::reset() {
@@ -176,7 +160,7 @@ int Simulator::reset() {
     return 0;
 }
 
-int Simulator::set_simulation_parameters() {
+void Simulator::set_simulation_parameters() {
     try {
         const auto& simulation_parameters = this->simulatorConfigs["simulation_parameters"];
         this->strResultsDir = simulation_parameters["results_dir"];
@@ -196,14 +180,11 @@ int Simulator::set_simulation_parameters() {
     }
 
     catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error extracting simulation parameters: " << e.what() << std::endl;
-        return 1;
+        throw std::runtime_error(std::string("Error extracting simulation parameters: ") + e.what());
     }
-
-    return 0;
 }
 
-int Simulator::init_economy() {
+void Simulator::init_economy() {
 
     try {
         const auto& economy_parameters = this->simulatorConfigs["default_economy_parameters"];
@@ -235,11 +216,8 @@ int Simulator::init_economy() {
     }
 
     catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error initializing economy: " << e.what() << std::endl;
-        return 1;
+        throw std::runtime_error(std::string("Error initializing economy: ") + e.what());
     }
-
-    return 0;
 }
 
 
@@ -283,7 +261,7 @@ int Simulator::reset_economy() {
 }
 
 
-int Simulator::init_control_agents() {
+void Simulator::init_control_agents() {
     try {
         for (const auto& agentData : this->simulatorConfigs["control_agents"]) {
             auto agentPtr = new ControlAgent(agentData["agent_id"],
@@ -299,14 +277,11 @@ int Simulator::init_control_agents() {
     }
 
     catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error initializing control agents: " << e.what() << std::endl;
-        return 1;
+        throw std::runtime_error(std::string("Error initializing control agents: ") + e.what());
     }
-
-    return 0;
 }
 
-int Simulator::init_AI_agents() {
+void Simulator::init_AI_agents() {
     try {
         for (const auto& agentData : this->simulatorConfigs["ai_agents"]) {
             if (agentData["agent_type"] == "stable_baselines_3") {
@@ -325,22 +300,18 @@ int Simulator::init_AI_agents() {
     }
 
     catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error initializing AI agents: " << e.what() << std::endl;
-        return 1;
+        throw std::runtime_error(std::string("Error initializing AI agents: ") + e.what());
     }
-
-    return 0;
 }
 
-int Simulator::init_firms_for_agents() {
+void Simulator::init_firms_for_agents() {
     // For now, this assigns each agent a firm with
     //    - no capabilities
     //    - no presence in any markets
     //    - the default starting capital
 
     if (mapAgentIDToAgentPtr.empty()) {
-        cerr << "Tried to initialize firms for agents before creating any agents." << endl;
-        return 1;
+        throw std::runtime_error("Tried to initialize firms for agents before creating any agents.");
     }
 
     const auto& firm_parameters = this->simulatorConfigs["default_firm_parameters"];
@@ -363,8 +334,6 @@ int Simulator::init_firms_for_agents() {
     if (bRandomizeAgentFirmAssignmentPerSimulation) {
         shuffle_agent_firm_assignments();
     }
-
-    return 0;
 }
 
 //int Simulator::set_fixed_cost_for_existence() {
@@ -400,7 +369,7 @@ void Simulator::shuffle_agent_firm_assignments() {
     throw std::exception();
 }
 
-int Simulator::init_markets() {
+void Simulator::init_markets() {
     try {
         const auto& market_parameters = this->simulatorConfigs["default_market_parameters"];
         double dbFixedCostPercentageOfEntry = market_parameters["fixed_cost_percentage_of_entry"];
@@ -443,10 +412,8 @@ int Simulator::init_markets() {
         } // End of outer loop
     } // End of try block
     catch (const std::exception& e) {
-        cerr << "Error initializing markets: " << e.what() << endl;
-        return 1;
+        throw std::runtime_error(std::string("Error initializing markets: ") + e.what());
     }
-    return 0;
 }
 
 
@@ -594,7 +561,7 @@ void Simulator::set_agent_turn_order() {
     vecAgentTurnOrder = vecNewTurnOrder;
 }
 
-int Simulator::perform_micro_step_control_agent_or_skip_turn(const int& iActingAgentID) {
+void Simulator::perform_micro_step_control_agent_or_skip_turn(const int& iActingAgentID) {
     if (bVerbose) cout << "Performing micro step. Acting agent ID: " << iActingAgentID << endl;
 
     // Get agent actions
@@ -603,20 +570,16 @@ int Simulator::perform_micro_step_control_agent_or_skip_turn(const int& iActingA
         vecActions = get_actions_for_all_agents_control_agent_turn(iActingAgentID);
     }
     catch (const std::exception& e) {
-        cerr << "Error getting agent actions during micro step " << iCurrentMicroTimeStep << endl;
-        cerr << e.what() << endl;
-        return 1;
+        throw std::runtime_error("Error getting agent actions during micro step " + std::to_string(iCurrentMicroTimeStep) + ": " + e.what());
     }
 
     // Execute actions and distribute profits
     if (perform_micro_step_helper(vecActions))
-        return 1;
-
-    return 0;
+        throw std::runtime_error("perform_micro_step_helper failed");
 }
 
 
-int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID) {
+void Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID) {
     if (bVerbose) cout << "Performing micro step. Acting agent ID: " << iActingAgentID << endl;
 
     // Get agent actions
@@ -625,19 +588,15 @@ int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const
         vecActions = get_actions_for_all_agents_ai_agent_turn(iActingAgentID, iAIAgentActionID);
     }
     catch (const std::exception& e) {
-        cerr << "Error getting agent actions during micro step " << iCurrentMicroTimeStep << endl;
-        cerr << e.what() << endl;
-        return 1;
+        throw std::runtime_error("Error getting agent actions during micro step " + std::to_string(iCurrentMicroTimeStep) + ": " + e.what());
     }
 
     // Execute actions and distribute profits
     if (perform_micro_step_helper(vecActions))
-        return 1;
+        throw std::runtime_error("perform_micro_step_helper failed");
 
     // Increment the number of AI turns that have taken place thus far in the simulation
     iNumAITurns++;
-
-    return 0;
 }
 
 int Simulator::perform_micro_step_helper(const vector<Action>& vecActions) {
