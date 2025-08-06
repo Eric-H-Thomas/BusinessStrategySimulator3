@@ -6,6 +6,7 @@ Use business_strategy_gym_env.py or another Python script for training AI agents
 #include <exception>
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include "Simulator/Simulator.h"
 #include "Config/ConfigValidator.h"
 
@@ -16,13 +17,12 @@ using std::endl;
 
 int main(int argc, char* argv[]) {
 
-    // Check for correct number of command-line arguments
-    if (argc != 2) {
-        cerr << "Expected 1 command-line argument. Got " << argc - 1 << endl;
-        return 1;
-    }
-
     try {
+        // Check for correct number of command-line arguments
+        if (argc != 2) {
+            throw std::invalid_argument("Expected 1 command-line argument. Got " + std::to_string(argc - 1));
+        }
+
         Simulator simulator;
         validate_config(argv[1]);
         simulator.load_json_configs(argv[1]);
