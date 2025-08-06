@@ -4,8 +4,6 @@
 
 #include "Firm.h"
 
-Firm::Firm() = default;
-
 Firm::Firm(int iFirmID, double dbStartingCapital, int iPossibleCapabilities) {
     this->iFirmID = iFirmID;
     this->dbCapital = dbStartingCapital;
@@ -20,7 +18,7 @@ double Firm::getDbCapital() const {
     return dbCapital;
 }
 
-bool Firm::is_in_market(Market market) {
+bool Firm::is_in_market(const Market& market) {
     if (this->setMarketIDs.find(market.get_market_id()) != setMarketIDs.end()) {
         return true;
     }
@@ -61,7 +59,7 @@ int Firm::remove_market_capabilities_from_firm_capabilities(const Market& market
     try {
         // Iterate through every market in the firm's portfolio, counting how many markets require each capability
         for (auto marketID : setMarketIDs) {
-            auto market = economy.get_market_by_ID(marketID);
+            const auto& market = economy.get_market_by_ID(marketID);
             capabilitiesVector = MiscUtils::vector_addition(capabilitiesVector, market.get_vec_capabilities());
         }
 
@@ -90,7 +88,7 @@ int Firm::remove_market_from_portfolio(const int& iMarketID) {
     return 0;
 }
 
-Market Firm::choose_market_with_highest_overlap(set<Market> setMarkets) {
+Market Firm::choose_market_with_highest_overlap(const set<Market>& setMarkets) {
     constexpr double EPSILON = 1e-12; // Small epsilon threshold to account for variance in division results
     double dbHighestOverlapValue = -1.0;  // Start below any valid percentage
     std::set<Market> setMarketsWithHighestOverlap;
@@ -133,8 +131,8 @@ const vector<int>& Firm::getVecCapabilities() const {
 
 void Firm::reset(double dbStartingCapital) {
     // Reset capabilities
-    for (size_t i = 0; i < vecCapabilities.size(); i++) {
-        vecCapabilities[i] = 0;
+    for (int & vecCapability : vecCapabilities) {
+        vecCapability = 0;
     }
 
     // Reset portfolio
@@ -149,8 +147,8 @@ void Firm::declare_bankruptcy() {
     dbCapital = -1e-9;
 
     // Reset capabilities
-    for (size_t i = 0; i < vecCapabilities.size(); i++) {
-        vecCapabilities[i] = 0;
+    for (int & vecCapability : vecCapabilities) {
+        vecCapability = 0;
     }
 
     // Reset portfolio

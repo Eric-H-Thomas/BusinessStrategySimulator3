@@ -1,3 +1,3 @@
 #include "DataCache.h"
 
-DataCache::DataCache() {}
+DataCache::DataCache() = default;

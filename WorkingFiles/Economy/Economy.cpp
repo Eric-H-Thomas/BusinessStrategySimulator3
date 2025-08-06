@@ -5,6 +5,7 @@
 #define NOT_YET_SET (-1)
 #include "Economy.h"
 #include <random>
+#include <utility>
 
 Economy::Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNumMarketClusters, vector<int> vecClusterMeans,
                  vector<int> vecClusterSDs, vector<int> vecMarketsPerCluster, double dbMarketEntryCostMax,
@@ -13,9 +14,9 @@ Economy::Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNum
     this->iPossibleCapabilities = iPossibleCapabilities;
     this->iCapabilitiesPerMarket = iCapabilitiesPerMarket;
     this->iNumMarketClusters = iNumMarketClusters;
-    this->vecClusterMeans = vecClusterMeans;
-    this->vecClusterSDs = vecClusterSDs;
-    this->vecMarketsPerCluster = vecMarketsPerCluster;
+    this->vecClusterMeans = std::move(vecClusterMeans);
+    this->vecClusterSDs = std::move(vecClusterSDs);
+    this->vecMarketsPerCluster = std::move(vecMarketsPerCluster);
 
     // The rest of this constructor initializes the capability costs vector ////////////////////////
     double dbCapCostMin = dbMarketEntryCostMin / iCapabilitiesPerMarket;
@@ -37,10 +38,11 @@ Economy::Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNum
 Economy::Economy() {
     this->iPossibleCapabilities = NOT_YET_SET;
     this->iCapabilitiesPerMarket = NOT_YET_SET;
+    this->iNumMarketClusters = NOT_YET_SET;
 }
 
 // Getters
-int Economy::get_total_markets()                            const { return vecMarkets.size(); }
+int Economy::get_total_markets()                            const { return static_cast<int>(vecMarkets.size()); }
 int Economy::get_num_market_clusters()                      const { return iNumMarketClusters; }
 int Economy::get_num_possible_capabilities()                const { return iPossibleCapabilities; }
 int Economy::get_num_capabilities_per_market()              const { return iCapabilitiesPerMarket; }
@@ -60,7 +62,7 @@ const Market& Economy::get_market_by_ID(int iMarketID) const {
     throw std::exception();
 }
 
-void Economy::add_market(Market market) {
+void Economy::add_market(const Market& market) {
     this->vecMarkets.push_back(market);
 }
 
@@ -70,7 +72,7 @@ void Economy::clear_markets() {
 
 set<int> Economy::get_set_market_IDs() const {
     set<int> setMarketIDs;
-    for (auto market : vecMarkets) {
+    for (const auto& market : vecMarkets) {
         setMarketIDs.insert(market.get_market_id());
     }
     return setMarketIDs;

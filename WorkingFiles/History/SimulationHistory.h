@@ -50,7 +50,7 @@ public:
     void record_entry_cost_change(int iMicroTimeStep, double dbNewEntryCost, int iFirmID, int iMarketID);
     void record_production_quantity_change(int iMicroTimeStep, double dbNewProductionQty, int iFirmID, int iMarketID);
     void record_price_change(int iMicroTimeStep, double dbNewPrice, int iFirmID, int iMarketID);
-    void record_bankruptcy(int iMicroTimeStep, int iFirmID, std::set<int> setMarketPortfolio);
+    void record_bankruptcy(int iMicroTimeStep, int iFirmID, const std::set<int>& setMarketPortfolio);
 };
 
 struct CapitalChange {

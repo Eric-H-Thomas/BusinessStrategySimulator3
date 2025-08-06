@@ -13,21 +13,21 @@ public:
     Market(int iMarketID, double dbFixedCostAsPercentageOfEntryCost, double dbExitCostAsPercentageOfEntryCost,
            double dbDemandIntercept, double dbDemandSlope,
            const vector<int>& vecCapabilities);
-    const vector<int>& get_vec_capabilities() const;
-    const int& get_market_id() const;
-    const double& getDbDemandIntercept() const;
-    const double& getDbDemandSlope() const;
-    const double& getExitCostAsPercentageOfEntryCost() const;
-    const double& getFixedCostAsPercentageOfEntryCost() const;
+    [[nodiscard]] const vector<int>& get_vec_capabilities() const;
+    [[nodiscard]] const int& get_market_id() const;
+    [[nodiscard]] const double& getDbDemandIntercept() const;
+    [[nodiscard]] const double& getDbDemandSlope() const;
+    [[nodiscard]] const double& getExitCostAsPercentageOfEntryCost() const;
+    [[nodiscard]] const double& getFixedCostAsPercentageOfEntryCost() const;
 
     // Comparison operator to allow markets to be placed in ordered data structures
     bool operator<(const Market& other) const;
 
 private:
-    int    iMarketID;
-    double dbFixedCostAsPercentageOfEntryCost;
-    double dbExitCostAsPercentageOfEntryCost;
-    double dbDemandIntercept;
-    double dbDemandSlope;
+    int    iMarketID{};
+    double dbFixedCostAsPercentageOfEntryCost{};
+    double dbExitCostAsPercentageOfEntryCost{};
+    double dbDemandIntercept{};
+    double dbDemandSlope{};
     vector<int> vecCapabilities;
 };

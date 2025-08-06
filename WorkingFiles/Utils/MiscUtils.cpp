@@ -55,7 +55,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
 
 
 // Dot product of two vectors of doubles
-double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<double>& vector2) {
+[[maybe_unused]] double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<double>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
         std::cerr << "Vectors must have the same dimension" << std::endl;
@@ -72,7 +72,7 @@ double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vec
 }
 
 // Dot product of two vectors of ints
-int MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<int>& vector2) {
+[[maybe_unused]] int MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<int>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
         std::cerr << "Vectors must have the same dimension" << std::endl;
@@ -89,7 +89,7 @@ int MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<in
 }
 
 // Dot product of a vector of ints with a vector of doubles
-double MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<double>& vector2) {
+[[maybe_unused]] double MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<double>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
         std::cerr << "Vectors must have the same dimension" << std::endl;
@@ -106,7 +106,7 @@ double MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector
 }
 
 // Dot product of a vector of doubles with a vector of ints
-double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<int>& vector2) {
+[[maybe_unused]] double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<int>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
         std::cerr << "Vectors must have the same dimension" << std::endl;
@@ -165,12 +165,12 @@ double MiscUtils::get_percentage_overlap(const std::vector<int>& vector1, const 
     }
 
     // Calculate the percentage overlap
-    double percentageOverlap = (static_cast<double>(overlapCount) / vector1.size());
+    double percentageOverlap = (static_cast<double>(overlapCount) / static_cast<double>(vector1.size()));
 
     return percentageOverlap;
 }
 
-vector<int> MiscUtils::element_wise_logical_and(const vector<int>& vector1, const vector<int>& vector2) {
+[[maybe_unused]] vector<int> MiscUtils::element_wise_logical_and(const vector<int>& vector1, const vector<int>& vector2) {
     // Check that the vectors have the same size
     if (vector1.size() != vector2.size()) {
         std::cerr << "Vector sizes must be the same for element-wise AND." << std::endl;
@@ -243,9 +243,9 @@ vector<int> MiscUtils::vector_subtraction(const vector<int>& vector1, const vect
 }
 
 void MiscUtils::set_all_positive_values_to_one(vector<int>& vector) {
-    for (size_t i = 0; i < vector.size(); i++) {
-        if (vector.at(i) > 0) {
-            vector.at(i) = 1;
+    for (int& i : vector) {
+        if (i > 0) {
+            i = 1;
         }
     }
 }

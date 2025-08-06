@@ -6,7 +6,7 @@
 #include "Market.h"
 
 // Default constructor
-Market::Market() {}
+Market::Market() = default;
 
 // Parameterized constructor
 Market::Market(int iMarketID, double dbFixedCostAsPercentageOfEntryCost, double dbExitCostAsPercentageOfEntryCost,

@@ -30,7 +30,7 @@ public:
     string strMasterHistoryOutputPath;
 
 private:
-    int get_row_number(int iCurrentSim, int iCurrentFirm, int iCurrentMarket, int iCurrentMicroStep);
+    [[nodiscard]] int get_row_number(int iCurrentSim, int iCurrentFirm, int iCurrentMarket, int iCurrentMicroStep) const;
     void fill_in_capital_info();
     void fill_in_revenue_info();
     void fill_in_market_presence_info();

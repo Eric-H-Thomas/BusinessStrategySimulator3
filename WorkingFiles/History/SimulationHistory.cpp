@@ -14,7 +14,7 @@ SimulationHistory::SimulationHistory(const map<int, int>& mapAgentToFirm,
         mapMarketMaximumEntryCost(mapMarketMaximumEntryCost) {
 }
 
-void SimulationHistory::record_bankruptcy(int iMicroTimeStep, int iFirmID, std::set<int> setMarketPortfolio) {
+void SimulationHistory::record_bankruptcy(int iMicroTimeStep, int iFirmID, const std::set<int>& setMarketPortfolio) {
     // Record bankruptcy in the simulation history
     for (int iMarketID : setMarketPortfolio) {
         record_market_presence_change(iMicroTimeStep, false, iFirmID, iMarketID);
@@ -28,64 +28,30 @@ void SimulationHistory::record_bankruptcy(int iMicroTimeStep, int iFirmID, std::
     record_capital_change(iMicroTimeStep, iFirmID, -1e-9);
 }
 
-void SimulationHistory::record_market_presence_change(int iMicroTimeStep, bool bPresent, int iFirmID, int iMarketID) {
-    MarketPresenceChange presenceChange;
-    presenceChange.iMicroTimeStep = iMicroTimeStep;
-    presenceChange.bPresent = bPresent;
-    presenceChange.iFirmID = iFirmID;
-    presenceChange.iMarketID = iMarketID;
-    vecMarketPresenceChanges.push_back(presenceChange);
-}
-
 void SimulationHistory::record_capital_change(int iMicroTimeStep, int iFirmID, double dbNewCapitalQty) {
-    CapitalChange capitalChange;
-    capitalChange.iMicroTimeStep = iMicroTimeStep;
-    capitalChange.iFirmID = iFirmID;
-    capitalChange.dbNewCapitalQty = dbNewCapitalQty;
-    vecCapitalChanges.push_back(capitalChange);
+    vecCapitalChanges.emplace_back(CapitalChange{iMicroTimeStep, iFirmID, dbNewCapitalQty});
 }
 
 void SimulationHistory::record_revenue_change(int iMicroTimeStep, double dbNewRevenueAmount, int iFirmID, int iMarketID) {
-    RevenueChange revenueChange;
-    revenueChange.iMicroTimeStep = iMicroTimeStep;
-    revenueChange.dbNewRevenueAmount = dbNewRevenueAmount;
-    revenueChange.iFirmID = iFirmID;
-    revenueChange.iMarketID = iMarketID;
-    vecRevenueChanges.push_back(revenueChange);
+    vecRevenueChanges.emplace_back(RevenueChange{iMicroTimeStep, dbNewRevenueAmount, iFirmID, iMarketID});
 }
 
 void SimulationHistory::record_fixed_cost_change(int iMicroTimeStep, double dbNewFixedCost, int iFirmID, int iMarketID) {
-    FixedCostChange fixedCostChange;
-    fixedCostChange.iMicroTimeStep = iMicroTimeStep;
-    fixedCostChange.dbNewFixedCost = dbNewFixedCost;
-    fixedCostChange.iFirmID = iFirmID;
-    fixedCostChange.iMarketID = iMarketID;
-    vecFixedCostChanges.push_back(fixedCostChange);
+    vecFixedCostChanges.emplace_back(FixedCostChange{iMicroTimeStep, dbNewFixedCost, iFirmID, iMarketID});
 }
 
 void SimulationHistory::record_entry_cost_change(int iMicroTimeStep, double dbNewEntryCost, int iFirmID, int iMarketID) {
-    EntryCostChange entryCostChange;
-    entryCostChange.iMicroTimeStep = iMicroTimeStep;
-    entryCostChange.dbNewEntryCost = dbNewEntryCost;
-    entryCostChange.iFirmID = iFirmID;
-    entryCostChange.iMarketID = iMarketID;
-    vecEntryCostChanges.push_back(entryCostChange);
+    vecEntryCostChanges.emplace_back(EntryCostChange{iMicroTimeStep, dbNewEntryCost, iFirmID, iMarketID});
 }
 
 void SimulationHistory::record_production_quantity_change(int iMicroTimeStep, double dbNewProductionQty, int iFirmID, int iMarketID) {
-    ProductionQuantityChange productionQuantityChange;
-    productionQuantityChange.iMicroTimeStep = iMicroTimeStep;
-    productionQuantityChange.dbNewProductionQty = dbNewProductionQty;
-    productionQuantityChange.iFirmID = iFirmID;
-    productionQuantityChange.iMarketID = iMarketID;
-    vecProductionQtyChanges.push_back(productionQuantityChange);
+    vecProductionQtyChanges.emplace_back(ProductionQuantityChange{iMicroTimeStep, dbNewProductionQty, iFirmID, iMarketID});
 }
 
 void SimulationHistory::record_price_change(int iMicroTimeStep, double dbNewPrice, int iFirmID, int iMarketID) {
-    PriceChange priceChange;
-    priceChange.iMicroTimeStep = iMicroTimeStep;
-    priceChange.dbNewPrice = dbNewPrice;
-    priceChange.iFirmID = iFirmID;
-    priceChange.iMarketID = iMarketID;
-    vecPriceChanges.push_back(priceChange);
+    vecPriceChanges.emplace_back(PriceChange{iMicroTimeStep, dbNewPrice, iFirmID, iMarketID});
+}
+
+void SimulationHistory::record_market_presence_change(int iMicroTimeStep, bool bPresent, int iFirmID, int iMarketID) {
+    vecMarketPresenceChanges.emplace_back(MarketPresenceChange{ iMicroTimeStep, bPresent, iFirmID, iMarketID });
 }

@@ -127,7 +127,7 @@ void MasterHistory::prepare_data_for_output() {
     // before moving to the next simulation.)
 
     // Instantiate all the data rows
-    int iNumRows = vecSimulationHistoryPtrs.size() * iNumFirms * iNumMarkets * iMicroStepsPerSim;
+    int iNumRows = static_cast<int>(vecSimulationHistoryPtrs.size()) * iNumFirms * iNumMarkets * iMicroStepsPerSim;
     vecDataRows.resize(iNumRows);
 
     // TODO: factor this out into a separate function
@@ -611,7 +611,7 @@ void MasterHistory::fill_in_quantity_info() {
 } // End of fill_in_entry_quantity_info()
 
 
-int MasterHistory::get_row_number(int iCurrentSim, int iCurrentFirm, int iCurrentMarket, int iCurrentMicroStep) {
+int MasterHistory::get_row_number(int iCurrentSim, int iCurrentFirm, int iCurrentMarket, int iCurrentMicroStep) const {
     int iRowsFromPastSimulations = iCurrentSim * iNumFirms * iNumMarkets * iMicroStepsPerSim;
     int iRowsFromPastFirms = iCurrentFirm * iNumMarkets * iMicroStepsPerSim;
     int iRowsFromPastMarkets = iCurrentMarket * iMicroStepsPerSim;

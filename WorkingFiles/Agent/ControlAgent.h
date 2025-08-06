@@ -26,11 +26,11 @@ public:
                  const string& strExitPolicy, const string& strProductionPolicy,
                  const double& dbEntryActionLikelihood,
                  const double& dbExitActionLikelihood, const double& dbNoneActionLikelihood);
-    std::vector<double> get_action_likelihood_vector() const;
-    EntryPolicy get_enum_entry_policy() const;
-    ExitPolicy get_enum_exit_policy() const;
-    ProductionPolicy get_enum_production_policy() const override;
-    string to_string() const override;
+    [[nodiscard]] std::vector<double> get_action_likelihood_vector() const;
+    [[nodiscard]] EntryPolicy get_enum_entry_policy() const;
+    [[nodiscard]] ExitPolicy get_enum_exit_policy() const;
+    [[nodiscard]] ProductionPolicy get_enum_production_policy() const override;
+    [[nodiscard]] string to_string() const override;
 
 private:
     EntryPolicy enumEntryPolicy;

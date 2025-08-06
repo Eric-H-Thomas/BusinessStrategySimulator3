@@ -56,8 +56,8 @@ Simulator::Simulator() = default;
 
 
 int Simulator::get_num_sims() const { return iNumSims; }
-int Simulator::get_macro_steps_per_sim() const { return iMacroStepsPerSim; }
-vector<int> Simulator::get_agent_turn_order() { return vecAgentTurnOrder; }
+// int Simulator::get_macro_steps_per_sim() const { return iMacroStepsPerSim; }
+// vector<int> Simulator::get_agent_turn_order() { return vecAgentTurnOrder; }
 
 
 int Simulator::load_json_configs(const string& strConfigFilePath) {
@@ -374,11 +374,11 @@ int Simulator::init_firms_for_agents() {
 
 void Simulator::init_master_history() {
     // Get the number of micro steps per macro step
-    double dbMicroStepsPerMacroStep = mapAgentIDToAgentPtr.size() * (1.0 + dbSkippedTurnsPerRegularTurn);
-    int iMicroStepsPerMacroStep = static_cast<int>(std::ceil(dbMicroStepsPerMacroStep));
+    double dbMicroStepsPerMacroStep = static_cast<double>(mapAgentIDToAgentPtr.size()) * (1.0 + dbSkippedTurnsPerRegularTurn);
+    int iMicroStepsPerMacroStep = static_cast<int>(std::round(dbMicroStepsPerMacroStep));
 
     masterHistory.iMicroStepsPerSim = iMicroStepsPerMacroStep * iMacroStepsPerSim;
-    masterHistory.iNumFirms = mapFirmIDToFirmPtr.size();
+    masterHistory.iNumFirms = static_cast<int>(mapFirmIDToFirmPtr.size());
     masterHistory.iNumMarkets = economy.get_total_markets();
 
     const auto& economy_parameters = this->simulatorConfigs["default_economy_parameters"];
@@ -515,7 +515,7 @@ vector<int> Simulator::create_market_capability_vector(const double& dbMean, con
         double dbRandomValue = dist(gen);
 
         // Round the random value to the nearest integer
-        int iRoundedValue = std::round(dbRandomValue);
+        int iRoundedValue = static_cast<int>(std::round(dbRandomValue));
 
         // Keep track of whether we most recently rounded up or down to the nearest integer
         bool bMostRecentlyRoundedUp = false;
@@ -567,6 +567,7 @@ void Simulator::set_agent_turn_order() {
     vector<int> vecNewTurnOrder;
 
     // Add each agent ID exactly once
+    vecNewTurnOrder.reserve(mapAgentIDToAgentPtr.size());
     for (const auto& pair : mapAgentIDToAgentPtr) {
         vecNewTurnOrder.push_back(pair.first);
     }
@@ -633,7 +634,7 @@ int Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const
     return 0;
 }
 
-int Simulator::perform_micro_step_helper(vector<Action> vecActions) {
+int Simulator::perform_micro_step_helper(const vector<Action>& vecActions) {
     // Create a map of capital change for each firm within this micro step (capital can be affected by both action
     // execution and profit distribution, so to get the total capital change within the micro time step we must add
     // these two effects). Initialize all values to zero.
@@ -710,7 +711,7 @@ vector<Action> Simulator::get_actions_for_all_agents_control_agent_turn(const in
     for (const auto& pair : mapAgentIDToAgentPtr) {
         auto agentPtr = pair.second;
         if (agentPtr->enumAgentType == AgentType::Control) {
-            ControlAgent* controlAgentPtr = dynamic_cast<ControlAgent*>(agentPtr);
+            auto controlAgentPtr = dynamic_cast<ControlAgent*>(agentPtr);
             // Get action for the acting agent
             if (agentPtr->get_agent_ID() == iActingAgentID) {
                 try {
@@ -861,10 +862,10 @@ int Simulator::execute_entry_action(const Action& action, map<int, double>* pMap
     currentSimulationHistoryPtr->record_market_presence_change(iCurrentMicroTimeStep, true, firmPtr->getFirmID(), action.iMarketID);
 
     // Update the entry cost for this firm for all markets
-    for (Market market : economy.get_vec_markets()) {
+    for (const Market& market : economy.get_vec_markets()) {
         // Get vector of capabilities the firm lacks to enter the market
         auto vecFirmCapabilities = firmPtr->getVecCapabilities();
-        auto vecMarketCapabilities = market.get_vec_capabilities();
+        const auto& vecMarketCapabilities = market.get_vec_capabilities();
 
         if (vecFirmCapabilities.size() != vecMarketCapabilities.size()) {
             cerr << "Mismatch between firm capability vector size and market capability vector size in execute_entry_action()" << endl;
@@ -932,10 +933,10 @@ int Simulator::execute_exit_action(const Action& action, map<int, double>* pMapF
     currentSimulationHistoryPtr->record_market_presence_change(iCurrentMicroTimeStep, false, firmPtr->getFirmID(), action.iMarketID);
 
     // Update the entry cost for this firm for each market
-    for (Market market : economy.get_vec_markets()) {
+    for (const Market& market : economy.get_vec_markets()) {
         // Get vector of capabilities the firm lacks to enter the market
         auto vecFirmCapabilities = firmPtr->getVecCapabilities();
-        auto vecMarketCapabilities = market.get_vec_capabilities();
+        const auto& vecMarketCapabilities = market.get_vec_capabilities();
 
         if (vecFirmCapabilities.size() != vecMarketCapabilities.size()) {
             cerr << "Mismatch between firm capability vector size and market capability vector size in execute_entry_action()" << endl;
@@ -995,13 +996,9 @@ Action Simulator::get_agent_action(const ControlAgent& agent) {
     else if (actionType == ActionType::enumExitAction) {
         return get_exit_action(agent);
     }
-    else if (actionType == ActionType::enumNoneAction) {
+    else {
         return Action::generate_none_action(agent.get_agent_ID());
     }
-
-    // Should never reach this part of the code
-    cerr << "Error getting control agent action" << endl;
-    throw std::exception();
 }
 
 ActionType Simulator::get_action_type(const ControlAgent& agent) {
@@ -1120,8 +1117,8 @@ void Simulator::init_simulation_history() {
 
     // Generate map of market maximum entry costs
     map<int, double> mapMarketMaximumEntryCosts;
-    for (auto market : this->economy.get_vec_markets()) {
-        vector<int> vecMarketCapabilities = market.get_vec_capabilities();
+    for (const auto& market : this->economy.get_vec_markets()) {
+        const vector<int>& vecMarketCapabilities = market.get_vec_capabilities();
         double dbMaxEntryCost = MiscUtils::dot_product(vecMarketCapabilities, this->economy.get_vec_capability_costs());
         mapMarketMaximumEntryCosts[market.get_market_id()] = dbMaxEntryCost;
     }
@@ -1210,10 +1207,10 @@ int Simulator::init_data_cache(SimulationHistory* pCurrentSimulationHistory) {
     return 0;
 }
 
-Firm* Simulator::get_firm_ptr_from_agent_ptr(BaseAgent* agentPtr) {
-    int iFirmID = agentPtr->iFirmAssignment;
-    return mapFirmIDToFirmPtr.at(iFirmID);
-}
+//Firm* Simulator::get_firm_ptr_from_agent_ptr(BaseAgent* agentPtr) {
+//    int iFirmID = agentPtr->iFirmAssignment;
+//    return mapFirmIDToFirmPtr.at(iFirmID);
+//}
 
 Firm* Simulator::get_firm_ptr_from_agent_id(const int& iAgentID) {
     auto agentPtr = mapAgentIDToAgentPtr.at(iAgentID);
@@ -1241,7 +1238,7 @@ int Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) {
     if (bVerbose) cout << "Distributing profits" << endl;
 
     // Iterate through each of the markets in the economy
-    for (auto market : economy.get_vec_markets()) {
+    for (const auto& market : economy.get_vec_markets()) {
         /*
             Here, we use the same variable names provided in the simulator documentation:
               Key:
@@ -1257,7 +1254,7 @@ int Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) {
 
         // Calculate the total production level and price for the market
         set<int> setFirmIDsInMarket = get_firm_IDs_in_market(market);
-        double n = (double)setFirmIDsInMarket.size(); // Cast to double to avoid integer division problems
+        auto n = static_cast<double>(setFirmIDsInMarket.size()); // Cast to double to avoid integer division problems
         double V = get_average_var_cost_in_market(market);
         double a = market.getDbDemandIntercept();
         double b = market.getDbDemandSlope();
@@ -1344,11 +1341,11 @@ set<int> Simulator::get_set_market_IDs() {
     return economy.get_set_market_IDs();
 }
 
-int Simulator::get_num_markets() {
-    return economy.get_total_markets();
-}
+//int Simulator::get_num_markets() {
+//    return economy.get_total_markets();
+//}
 
-set<int> Simulator::get_firm_IDs_in_market(Market market) {
+set<int> Simulator::get_firm_IDs_in_market(const Market& market) {
     set<int> setFirmIDs;
     for (auto pair : mapFirmIDToFirmPtr) {
         auto pFirm = pair.second;
@@ -1359,7 +1356,7 @@ set<int> Simulator::get_firm_IDs_in_market(Market market) {
     return setFirmIDs;
 }
 
-map<int, double> Simulator::get_map_firm_to_var_cost_for_market(Market market) {
+map<int, double> Simulator::get_map_firm_to_var_cost_for_market(const Market& market) {
     map<int, double> mapFirmToVarCost;
     int iMarketID = market.get_market_id();
 
@@ -1378,7 +1375,7 @@ map<int, double> Simulator::get_map_firm_to_var_cost_for_market(Market market) {
     return mapFirmToVarCost;
 }
 
-double Simulator::get_average_var_cost_in_market(Market market) {
+double Simulator::get_average_var_cost_in_market(const Market& market) {
     map<int, double> mapFirmToVarCost = get_map_firm_to_var_cost_for_market(market);
 
     set<int> setFirmsInMarket = get_firm_IDs_in_market(market);
@@ -1392,7 +1389,7 @@ double Simulator::get_average_var_cost_in_market(Market market) {
         dbTotalVarCost += mapFirmToVarCost.at(iFirmID);
     }
 
-    int iTotalFirms = setFirmsInMarket.size();
+    int iTotalFirms = static_cast<int>(setFirmsInMarket.size());
     return dbTotalVarCost / iTotalFirms;
 }
 
@@ -1402,7 +1399,7 @@ void Simulator::add_profit_to_firm(double dbProfit, int iFirmID) {
 }
 
 int Simulator::get_micro_steps_per_macro_step() {
-    double dbTotalTurns = mapAgentIDToAgentPtr.size() * (1.0 + dbSkippedTurnsPerRegularTurn);
+    double dbTotalTurns = static_cast<double>(mapAgentIDToAgentPtr.size()) * (1.0 + dbSkippedTurnsPerRegularTurn);
     return static_cast<int>(std::ceil(dbTotalTurns));
 }
 
@@ -1431,7 +1428,8 @@ bool Simulator::is_bankrupt(const int& iAgentID) {
     return firmPtr->getDbCapital() < 0.0;
 }
 
-vector<double> Simulator::generate_state_observation(const int& iAgentID) {
+// Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
+[[maybe_unused]] vector<double> Simulator::generate_state_observation(const int& iAgentID) {
     /*
      * Let F be the number of firms in the simulation.
      * Let M be the number of markets in the simulation.
@@ -1513,9 +1511,9 @@ vector<double> Simulator::get_market_overlap_representation() {
     // the Tableau visualization of the market overlap requires it. (It also will not be symmetric if we allow
     // markets to vary in their number of required capabilities.)
     if (currentSimulationHistoryPtr->vecOfVecMarketOverlapMatrix.empty()) {
-        for (Market market1 : economy.get_vec_markets()) {
+        for (const Market& market1 : economy.get_vec_markets()) {
             vector<double> vecOverlap;
-            for (Market market2 : economy.get_vec_markets()) {
+            for (const Market& market2 : economy.get_vec_markets()) {
                 double dbOverlap = MiscUtils::get_percentage_overlap(market1.get_vec_capabilities(),
                                                                      market2.get_vec_capabilities());
 
@@ -1717,7 +1715,7 @@ vector<double> Simulator::get_entry_cost_representation(const int& iAgentID) {
 
 vector<double> Simulator::get_demand_intercept_representation() {
     vector<double> vecDbDemandIntercepts;
-    for (auto market : economy.get_vec_markets()) {
+    for (const auto& market : economy.get_vec_markets()) {
         vecDbDemandIntercepts.push_back(market.getDbDemandIntercept());
     }
     return vecDbDemandIntercepts;
@@ -1725,7 +1723,7 @@ vector<double> Simulator::get_demand_intercept_representation() {
 
 vector<double> Simulator::get_demand_slope_representation() {
     vector<double> vecDbDemandSlopes;
-    for (auto market : economy.get_vec_markets()) {
+    for (const auto& market : economy.get_vec_markets()) {
         vecDbDemandSlopes.push_back(market.getDbDemandSlope());
     }
     return vecDbDemandSlopes;
@@ -1814,7 +1812,8 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
 }
 
 // Generates reward for the specified RL agent as its change in capital since the last time it acted
-double Simulator::generate_reward(const int& iAgentID) {
+// Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
+[[maybe_unused]] double Simulator::generate_reward(const int& iAgentID) {
     // Calculate average capital change since the last time this agent acted
     auto firmPtr = get_firm_ptr_from_agent_id(iAgentID);
     double dbCurrentCapital = firmPtr->getDbCapital();
@@ -1833,7 +1832,8 @@ double Simulator::generate_reward(const int& iAgentID) {
     return dbAverageCapitalChange;
 }
 
-int Simulator::get_next_AI_agent_index() {
+// Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
+[[maybe_unused]] int Simulator::get_next_AI_agent_index() {
     if (iNumAIAgents == 0) {
         // No AI agents available to act
         return -1;
@@ -1860,12 +1860,14 @@ int Simulator::get_next_AI_agent_index() {
     throw std::exception();
 }
 
-int Simulator::get_num_AI_agents() {
+// Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
+[[maybe_unused]] int Simulator::get_num_AI_agents() const {
     return iNumAIAgents;
 }
 
-int Simulator::get_num_total_agents() {
-    return mapAgentIDToAgentPtr.size();
+// Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
+[[maybe_unused]] int Simulator::get_num_total_agents() {
+    return static_cast<int>(mapAgentIDToAgentPtr.size());
 }
 
 bool Simulator::at_beginning_of_macro_step() {
