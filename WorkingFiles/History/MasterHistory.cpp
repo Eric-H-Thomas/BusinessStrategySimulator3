@@ -6,12 +6,16 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <stdexcept>
 
 using std::string;
 using std::cout;
 using std::endl;
 
 SimulationHistory* MasterHistory::getCurrentSimulationHistoryPtr() {
+    if (vecSimulationHistoryPtrs.empty()) {
+        throw std::runtime_error("No simulation histories are available");
+    }
     return vecSimulationHistoryPtrs.back();
 }
 
