@@ -82,8 +82,8 @@ private:
     int iNumSims{};
     int iMacroStepsPerSim{};
     double dbSkippedTurnsPerRegularTurn{};
-//    bool bFixedCostForExistence;
-//    double dbFixedCostForExistence;
+    bool bFixedCostForExistence{};
+    double dbFixedCostForExistence{};
     bool bRandomizeTurnOrderWithinEachMacroStep{};
     bool bRandomizeAgentFirmAssignmentPerSimulation{};
     bool bRandomizeVariableCostsPerSimulation{};
@@ -108,7 +108,7 @@ private:
     void reset_economy();
     void reset_markets();
     void set_simulation_parameters();
-    // int set_fixed_cost_for_existence();
+    int set_fixed_cost_for_existence();
     void init_firms_for_agents();
     vector<int> create_market_capability_vector(const double& dbMean, const double& dbSD);
     vector<Action> get_actions_for_all_agents_control_agent_turn(const int& iActingAgentID);

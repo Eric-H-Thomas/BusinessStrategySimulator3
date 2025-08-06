@@ -56,6 +56,9 @@ void validate_config(const std::string& strConfigFilePath) {
     require(sim.contains("randomize_markets_per_simulation") &&
             sim["randomize_markets_per_simulation"].is_boolean(),
             "simulation_parameters.randomize_markets_per_simulation must be a boolean");
+    require(sim.contains("fixed_cost_for_existence") &&
+            sim["fixed_cost_for_existence"].is_boolean(),
+            "simulation_parameters.fixed_cost_for_existence must be a boolean");
 
     // Control agents
     require(config.contains("control_agents") && config["control_agents"].is_array(),
