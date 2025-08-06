@@ -19,12 +19,15 @@ SimulationHistory* MasterHistory::getCurrentSimulationHistoryPtr() {
     return vecSimulationHistoryPtrs.back();
 }
 
-int MasterHistory::generate_master_output() {
+void MasterHistory::generate_master_output() {
     cout << "Generating master output file." << endl;
 
     std::ofstream ofStreamMasterOutput;
     string strPath = this->strMasterHistoryOutputPath + "/MasterOutput.csv";
     ofStreamMasterOutput.open(strPath);
+    if (!ofStreamMasterOutput.is_open()) {
+        throw std::runtime_error("Failed to open master output file: " + strPath);
+    }
 
     prepare_data_for_output();
 
@@ -67,16 +70,17 @@ int MasterHistory::generate_master_output() {
     }
 
     ofStreamMasterOutput.close();
-
-    return 0;
 }
 
-int MasterHistory::generate_market_overlap_file() {
+void MasterHistory::generate_market_overlap_file() {
     cout << "Generating market overlap file." << endl;
 
     std::ofstream ofStreamMarketOverlap;
     string strPath = this->strMasterHistoryOutputPath + "/MarketOverlap.csv";
     ofStreamMarketOverlap.open(strPath);
+    if (!ofStreamMarketOverlap.is_open()) {
+        throw std::runtime_error("Failed to open market overlap file: " + strPath);
+    }
 
     // Create header row
     ofStreamMarketOverlap << "" << ",";
@@ -115,8 +119,6 @@ int MasterHistory::generate_market_overlap_file() {
     }
 
     ofStreamMarketOverlap.close();
-
-    return 0;
 }
 
 void MasterHistory::prepare_data_for_output() {

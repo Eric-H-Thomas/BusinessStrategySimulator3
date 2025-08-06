@@ -30,21 +30,14 @@ int main(int argc, char* argv[]) {
 
         for (int iSim = 0; iSim < simulator.get_num_sims(); iSim++) {
             cout << "Beginning simulation " << iSim << " of " << simulator.get_num_sims() - 1 << " (indexed at 0)" << endl;
-            if (simulator.reset())
-                return 1;
+            simulator.reset();
 
             simulator.run();
         }
 
         if (simulator.bGenerateMasterOutput) {
-            if (simulator.masterHistory.generate_master_output()) {
-                cerr << "Error generating master output file" << endl;
-                return 1;
-            }
-            if (simulator.masterHistory.generate_market_overlap_file()) {
-                cerr << "Error generating market overlap file" << endl;
-                return 1;
-            }
+            simulator.masterHistory.generate_master_output();
+            simulator.masterHistory.generate_market_overlap_file();
         }
     }
     catch (const std::exception& e) {
