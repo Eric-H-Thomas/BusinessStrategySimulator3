@@ -1541,9 +1541,6 @@ vector<double> Simulator::get_market_overlap_representation() {
 }
 
 vector<double> Simulator::get_variable_cost_representation(const int& iAgentID) {
-    // TODO: Implement a binary mask so that the AI agent can only know that variable cost of a firm-market combination
-    //  if the given firm has been present in the given market during the current simulation. For now, the AI agent
-    //  can see all variable costs.
     vector<double> vecDbVarCosts;
 
     // Get the variable costs for the firm of the acting agent
