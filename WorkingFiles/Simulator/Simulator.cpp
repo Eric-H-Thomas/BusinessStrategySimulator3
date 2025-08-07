@@ -860,6 +860,18 @@ void Simulator::execute_exit_action(const Action& action, map<int, double>* pMap
     auto pairFirmMarket = std::make_pair(firmPtr->getFirmID(), action.iMarketID);
     double dbExitCost = dataCache.mapFirmMarketComboToExitCost.at(pairFirmMarket);
 
+    // Ensure the firm has enough capital to cover the exit cost
+    double dbCurrentCapital = firmPtr->getDbCapital();
+    if (dbCurrentCapital < dbExitCost) {
+        if (bVerbose) {
+            cout << "Firm " << firmPtr->getFirmID()
+                 << " lacks sufficient capital to exit market " << action.iMarketID
+                 << ". Required: " << dbExitCost
+                 << ", available: " << dbCurrentCapital << endl;
+        }
+        return; // Skip action due to insufficient funds
+    }
+
     // Update capital within the firm object
     firmPtr->add_capital(-dbExitCost);
 
