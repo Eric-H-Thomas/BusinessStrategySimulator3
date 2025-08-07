@@ -4,7 +4,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "../WorkingFiles/PythonAPI/PythonAPI.h"
+#include "PythonAPI/PythonAPI.h"
 
 PYBIND11_MODULE(simulator_module, m) {
     // Expose the API class

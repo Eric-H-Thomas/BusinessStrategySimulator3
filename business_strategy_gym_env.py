@@ -90,7 +90,7 @@ if __name__ == "__main__":
         help="Path where the trained model will be saved.",
     )
     parser.add_argument(
-        "--num_updates", type=int, default=1, help="Number of PPO update iterations."
+        "--num_updates", type=int, default=100, help="Number of PPO update iterations."
     )
     args = parser.parse_args()
 

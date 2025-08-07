@@ -8,7 +8,6 @@ include_directories(external/pybind11/include)
 
 # List all the source files used by both the executable and the Pybind11 module
 set(COMMON_SOURCES
-        WorkingFiles/main.cpp
         WorkingFiles/Config/ConfigValidator.h
         WorkingFiles/Config/ConfigValidator.cpp
         WorkingFiles/Simulator/Simulator.cpp
