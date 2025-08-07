@@ -338,9 +338,8 @@ int Simulator::set_fixed_cost_for_existence() {
 }
 
 void Simulator::init_master_history() {
-    // Get the number of micro steps per macro step
-    double dbMicroStepsPerMacroStep = static_cast<double>(mapAgentIDToAgentPtr.size()) * (1.0 + dbSkippedTurnsPerRegularTurn);
-    int iMicroStepsPerMacroStep = static_cast<int>(std::round(dbMicroStepsPerMacroStep));
+    // Get the number of micro steps per macro step using the simulator's rounding strategy
+    int iMicroStepsPerMacroStep = get_micro_steps_per_macro_step();
 
     masterHistory.iMicroStepsPerSim = iMicroStepsPerMacroStep * iMacroStepsPerSim;
     masterHistory.iNumFirms = static_cast<int>(mapFirmIDToFirmPtr.size());
