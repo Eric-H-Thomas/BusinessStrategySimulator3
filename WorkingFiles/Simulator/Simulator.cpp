@@ -14,7 +14,6 @@
 
 using std::map;
 using std::vector;
-using std::cerr;
 using std::cout;
 using std::endl;
 
@@ -26,7 +25,9 @@ involving heuristic agents and/or trained AI agents.
 void Simulator::run() {
     // Loop through the macro steps
     for (int iMacroStep = 0; iMacroStep < iMacroStepsPerSim; iMacroStep++) {
-        if (bVerbose) cout << "Beginning macro step " << iMacroStep + 1 << " of " << iMacroStepsPerSim << endl;
+        if (bVerbose) {
+            cout << "Beginning macro step " << iMacroStep + 1 << " of " << iMacroStepsPerSim << endl;
+        }
 
         set_agent_turn_order();
 
@@ -283,8 +284,7 @@ void Simulator::init_AI_agents() {
                     this->iNumAIAgents++;
                 }
                 else {
-                    std::cerr << "AI agent production type not yet supported" << std::endl;
-                    throw std::exception();
+                    throw std::runtime_error("AI agent production type not yet supported");
                 }
 
             }
@@ -353,10 +353,7 @@ void Simulator::init_master_history() {
 }
 
 void Simulator::shuffle_agent_firm_assignments() {
-    cerr << "Called shuffle agent-firm assignments option.\nThis has not been implemented yet because the simulator "\
-        "currently creates identical firms that begin with the same capital and no capabilities.\nCome back and fill in "\
-        "this function or turn the shuffle option off." << endl;
-    throw std::exception();
+    throw std::runtime_error("Called shuffle agent-firm assignments option.\nThis has not been implemented yet because the simulator currently creates identical firms that begin with the same capital and no capabilities.\nCome back and fill in this function or turn the shuffle option off.");
 }
 
 void Simulator::init_markets() {
@@ -480,8 +477,9 @@ vector<int> Simulator::create_market_capability_vector(const double& dbMean, con
 
         // Keep track of whether we most recently rounded up or down to the nearest integer
         bool bMostRecentlyRoundedUp = false;
-        if (iRoundedValue > dbRandomValue)
+        if (iRoundedValue > dbRandomValue) {
             bMostRecentlyRoundedUp = true;
+        }
 
         bool bDone = false;
         int iAttempts = 0;
@@ -517,11 +515,14 @@ vector<int> Simulator::create_market_capability_vector(const double& dbMean, con
 }
 
 void Simulator::set_agent_turn_order() {
-    if (bVerbose) cout << "Setting the agent turn order" << endl;
+    if (bVerbose) {
+        cout << "Setting the agent turn order" << endl;
+    }
 
     // If we are not resetting the order within each macro step, we only want to set the order once
-    if (!bRandomizeTurnOrderWithinEachMacroStep && !vecAgentTurnOrder.empty())
+    if (!bRandomizeTurnOrderWithinEachMacroStep && !vecAgentTurnOrder.empty()) {
         return;
+    }
 
     // Generate a vector for the new turn order
     int iTotalTurns = get_micro_steps_per_macro_step();
@@ -550,7 +551,9 @@ void Simulator::set_agent_turn_order() {
 }
 
 void Simulator::perform_micro_step_control_agent_or_skip_turn(const int& iActingAgentID) {
-    if (bVerbose) cout << "Performing micro step. Acting agent ID: " << iActingAgentID << endl;
+    if (bVerbose) {
+        cout << "Performing micro step. Acting agent ID: " << iActingAgentID << endl;
+    }
 
     // Get agent actions
     vector<Action> vecActions;
@@ -567,7 +570,9 @@ void Simulator::perform_micro_step_control_agent_or_skip_turn(const int& iActing
 
 
 void Simulator::perform_micro_step_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID) {
-    if (bVerbose) cout << "Performing micro step. Acting agent ID: " << iActingAgentID << endl;
+    if (bVerbose) {
+        cout << "Performing micro step. Acting agent ID: " << iActingAgentID << endl;
+    }
 
     // Get agent actions
     vector<Action> vecActions;
@@ -659,7 +664,9 @@ void Simulator::perform_micro_step_helper(const vector<Action>& vecActions) {
 }
 
 vector<Action> Simulator::get_actions_for_all_agents_control_agent_turn(const int& iActingAgentID) {
-    if (bVerbose) cout << "Getting actions for all agents" << endl;
+    if (bVerbose) {
+        cout << "Getting actions for all agents" << endl;
+    }
     vector<Action> vecActions;
     for (const auto& pair : mapAgentIDToAgentPtr) {
         auto agentPtr = pair.second;
@@ -694,7 +701,9 @@ vector<Action> Simulator::get_actions_for_all_agents_control_agent_turn(const in
 }
 
 vector<Action> Simulator::get_actions_for_all_agents_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID) {
-    if (bVerbose) cout << "Getting actions for all agents" << endl;
+    if (bVerbose) {
+        cout << "Getting actions for all agents" << endl;
+    }
     vector<Action> vecActions;
     for (const auto& pair : mapAgentIDToAgentPtr) {
         auto agentPtr = pair.second;
@@ -747,7 +756,9 @@ Action Simulator::convert_action_ID_to_action_object(const int& iActingAgentID, 
 }
 
 void Simulator::execute_actions(const vector<Action>& vecActions, map<int, double>* pMapFirmIDToCapitalChange) {
-    if (bVerbose) cout << "Executing agent actions" << endl;
+    if (bVerbose) {
+        cout << "Executing agent actions" << endl;
+    }
 
     for (const Action& action : vecActions) {
         switch (action.enumActionType) {
@@ -957,8 +968,7 @@ ActionType Simulator::get_action_type(const ControlAgent& agent) {
     }
 
     // Should never reach this part of the code
-    cerr << "Error getting action_type" << endl;
-    throw std::exception();
+    throw std::runtime_error("Error getting action_type");
 }
 
 Action Simulator::get_entry_action(const ControlAgent& agent) {
@@ -968,8 +978,9 @@ Action Simulator::get_entry_action(const ControlAgent& agent) {
 
     // Iterate through all markets, adding each one to the decision set if the firm is not already in that market
     for (const auto& market : economy.get_vec_markets()) {
-        if (!firmPtr->is_in_market(market))
+        if (!firmPtr->is_in_market(market)) {
             setPossibleMarketsToEnter.insert(market);
+        }
     }
 
     // Check for the case that there are no markets to enter (extremely rare)
@@ -1032,8 +1043,7 @@ Action Simulator::get_exit_action(const ControlAgent& agent) {
 
     else {
         // Should never reach this part of the code
-        cerr << "Error getting exit action" << endl;
-        throw std::exception();
+        throw std::runtime_error("Error getting exit action");
     }
 
     // Construct and return the action object
@@ -1041,7 +1051,9 @@ Action Simulator::get_exit_action(const ControlAgent& agent) {
 }
 
 void Simulator::init_simulation_history() {
-    if (bVerbose) cout << "Initializing simulation history" << endl;
+    if (bVerbose) {
+        cout << "Initializing simulation history" << endl;
+    }
 
     // Generate map of agents to firms
     map<int, int> mapAgentToFirm;
@@ -1090,7 +1102,9 @@ void Simulator::init_simulation_history() {
 }
 
 void Simulator::init_data_cache(SimulationHistory* pCurrentSimulationHistory) {
-    if (bVerbose) cout << "Initializing data cache" << endl;
+    if (bVerbose) {
+        cout << "Initializing data cache" << endl;
+    }
 
     try {
         // Get all firm-market combinations
@@ -1164,8 +1178,7 @@ BaseAgent* Simulator::get_agent_ptr_from_firm_ID(int iFirmID) {
             return pAgent;
         }
     }
-    cerr << "Error in get_agent_ptr_from_firm_ID" << endl;
-    throw std::exception();
+    throw std::runtime_error("Error in get_agent_ptr_from_firm_ID");
 }
 
 Firm* Simulator::get_firm_ptr_from_agent(const ControlAgent& agent) {
@@ -1174,7 +1187,9 @@ Firm* Simulator::get_firm_ptr_from_agent(const ControlAgent& agent) {
 }
 
 void Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) {
-    if (bVerbose) cout << "Distributing profits" << endl;
+    if (bVerbose) {
+        cout << "Distributing profits" << endl;
+    }
 
     // Iterate through each of the markets in the economy
     for (const auto& market : economy.get_vec_markets()) {
@@ -1341,8 +1356,9 @@ int Simulator::get_micro_steps_per_macro_step() {
 
 bool Simulator::is_ai_agent(const int& iAgentID) {
     // Case where the agent ID does not exist and represents a skip turn
-    if (mapAgentIDToAgentPtr.find(iAgentID) == mapAgentIDToAgentPtr.end())
+    if (mapAgentIDToAgentPtr.find(iAgentID) == mapAgentIDToAgentPtr.end()) {
         return false;
+    }
 
     auto agentPtr = mapAgentIDToAgentPtr.at(iAgentID);
 
@@ -1353,9 +1369,9 @@ bool Simulator::is_ai_agent(const int& iAgentID) {
         return true;
     }
     else {
-        cerr << "Tried to determine whether agent was an AI agent but agent type has not been configured in"
-                "Simulator::is_ai_agent. Add code to account for this agent type." << endl;
-        throw std::exception();
+        throw std::runtime_error(
+                "Tried to determine whether agent was an AI agent but agent type has not been configured in"
+                " Simulator::is_ai_agent. Add code to account for this agent type.");
     }
 }
 
@@ -1422,8 +1438,9 @@ vector<double> Simulator::get_capital_representation(const int& iAgentID) {
     // Get the capital of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             vecDbCapital.push_back(firmPtr->getDbCapital());
@@ -1484,8 +1501,9 @@ vector<double> Simulator::get_variable_cost_representation(const int& iAgentID) 
     // Get the variable costs of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
@@ -1525,8 +1543,9 @@ vector<double> Simulator::get_fixed_cost_representation(const int& iAgentID) {
     // Get the fixed costs of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
@@ -1572,8 +1591,9 @@ vector<double> Simulator::get_market_portfolio_representation(const int& iAgentI
     // Get the portfolio of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
@@ -1619,8 +1639,9 @@ vector<double> Simulator::get_entry_cost_representation(const int& iAgentID) {
     // Get the entry costs of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
@@ -1676,8 +1697,9 @@ vector<double> Simulator::get_quantity_representation(const int& iAgentID) {
     // Get the production quantities of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {
@@ -1718,8 +1740,9 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
     // Get the prices of any other AI agents
     for (auto entry : mapAgentIDToAgentPtr) {
         // Skip the acting agent (already accounted for above)
-        if (entry.first == iAgentID)
+        if (entry.first == iAgentID) {
             continue;
+        }
         if (is_ai_agent(entry.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(entry.first);
             for (int iMarketID : get_set_market_IDs()) {

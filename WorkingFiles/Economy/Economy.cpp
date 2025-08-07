@@ -6,6 +6,7 @@
 #include "Economy.h"
 #include <random>
 #include <utility>
+#include <stdexcept>
 
 Economy::Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNumMarketClusters, vector<int> vecClusterMeans,
                  vector<int> vecClusterSDs, vector<int> vecMarketsPerCluster, double dbMarketEntryCostMax,
@@ -58,8 +59,7 @@ const Market& Economy::get_market_by_ID(int iMarketID) const {
             return market;
         }
     }
-    std::cerr << "Error getting market by ID" << std::endl;
-    throw std::exception();
+    throw std::runtime_error("Error getting market by ID");
 }
 
 void Economy::add_market(const Market& market) {

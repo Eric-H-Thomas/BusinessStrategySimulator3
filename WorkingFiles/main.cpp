@@ -10,7 +10,6 @@ Use business_strategy_gym_env.py or another Python script for training AI agents
 #include "Simulator/Simulator.h"
 #include "Config/ConfigValidator.h"
 
-using std::cerr;
 using std::cout;
 using std::endl;
 
@@ -47,7 +46,7 @@ int main(int argc, char* argv[]) {
     }
 
     catch (const std::exception& e) {
-        cerr << e.what() << endl;
+        std::cout << e.what() << std::endl;
         return 1;
     }
 

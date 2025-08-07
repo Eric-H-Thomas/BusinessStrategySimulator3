@@ -4,7 +4,6 @@
 
 #include "MiscUtils.h"
 
-#include <iostream>
 #include <vector>
 #include <random>
 #include <cmath>
@@ -55,8 +54,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
 [[maybe_unused]] double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<double>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension" << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vectors must have the same dimension");
     }
 
     double result = 0.0;
@@ -72,8 +70,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
 [[maybe_unused]] int MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<int>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension" << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vectors must have the same dimension");
     }
 
     int result = 0;
@@ -89,8 +86,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
 [[maybe_unused]] double MiscUtils::dot_product(const std::vector<int>& vector1, const std::vector<double>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension" << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vectors must have the same dimension");
     }
 
     double result = 0.0;
@@ -106,8 +102,7 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
 [[maybe_unused]] double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<int>& vector2) {
     if (vector1.size() != vector2.size()) {
         // Ensure that both vectors have the same dimension.
-        std::cerr << "Vectors must have the same dimension" << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vectors must have the same dimension");
     }
 
     double result = 0.0;
@@ -170,8 +165,7 @@ double MiscUtils::get_percentage_overlap(const std::vector<int>& vector1, const 
 [[maybe_unused]] vector<int> MiscUtils::element_wise_logical_and(const vector<int>& vector1, const vector<int>& vector2) {
     // Check that the vectors have the same size
     if (vector1.size() != vector2.size()) {
-        std::cerr << "Vector sizes must be the same for element-wise AND." << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vector sizes must be the same for element-wise AND.");
     }
 
     std::vector<int> result;
@@ -188,8 +182,7 @@ double MiscUtils::get_percentage_overlap(const std::vector<int>& vector1, const 
 vector<int> MiscUtils::element_wise_logical_or(const vector<int>& vector1, const vector<int>& vector2) {
     // Check that the vectors have the same size
     if (vector1.size() != vector2.size()) {
-        std::cerr << "Vector sizes must be the same for element-wise OR." << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vector sizes must be the same for element-wise OR.");
     }
 
     std::vector<int> result;
@@ -206,8 +199,7 @@ vector<int> MiscUtils::element_wise_logical_or(const vector<int>& vector1, const
 vector<int> MiscUtils::vector_addition(const vector<int>& vector1, const vector<int>& vector2) {
     // Check that the vectors have the same size
     if (vector1.size() != vector2.size()) {
-        std::cerr << "Vector sizes must be the same for vector addition." << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vector sizes must be the same for vector addition.");
     }
 
     std::vector<int> result;
@@ -224,8 +216,7 @@ vector<int> MiscUtils::vector_addition(const vector<int>& vector1, const vector<
 vector<int> MiscUtils::vector_subtraction(const vector<int>& vector1, const vector<int>& vector2) {
     // Check that the vectors have the same size
     if (vector1.size() != vector2.size()) {
-        std::cerr << "Vector sizes must be the same for vector subtraction." << std::endl;
-        throw std::exception();
+        throw std::runtime_error("Vector sizes must be the same for vector subtraction.");
     }
 
     std::vector<int> result;
