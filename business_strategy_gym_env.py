@@ -1,8 +1,6 @@
 import simulator_module
 import gymnasium as gym
 import numpy as np
-import stable_baselines3
-
 
 class BusinessStrategyEnv(gym.Env):
     def __init__(self, path_to_config_file):
@@ -72,15 +70,36 @@ class BusinessStrategyEnv(gym.Env):
     def close(self):
         self.python_API.close()
 
+if __name__ == "__main__":
+    from pathlib import Path
+    import argparse
+    import stable_baselines3
 
-# Define and train an RL agent
-n_steps = 2048  # StableBaselines3 default value
-n_envs = 1  # StableBaselines3 default value
-num_updates = 1
-total_steps = n_steps * n_envs * num_updates
+    parser = argparse.ArgumentParser(description="Train a PPO agent in the BusinessStrategyEnv.")
+    base_dir = Path(__file__).resolve().parent
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=base_dir / "WorkingFiles" / "Config" / "default.json",
+        help="Path to the simulator configuration file.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=base_dir / "AgentFiles" / "Agent.zip",
+        help="Path where the trained model will be saved.",
+    )
+    parser.add_argument(
+        "--num_updates", type=int, default=1, help="Number of PPO update iterations."
+    )
+    args = parser.parse_args()
 
-path_to_default_config_file = '/Users/eric/CLionProjects/BusinessStrategy2.0/WorkingFiles/Config/default.json'
-env = BusinessStrategyEnv(path_to_default_config_file)
-model = stable_baselines3.PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=total_steps)
-model.save("/Users/eric/CLionProjects/BusinessStrategy2.0/AgentFiles/Agent.zip")
+    n_steps = 2048  # StableBaselines3 default value
+    n_envs = 1  # StableBaselines3 default value
+    total_steps = n_steps * n_envs * args.num_updates
+
+    env = BusinessStrategyEnv(str(args.config))
+    model = stable_baselines3.PPO("MlpPolicy", env, verbose=1)
+    model.learn(total_timesteps=total_steps)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    model.save(str(args.output))
