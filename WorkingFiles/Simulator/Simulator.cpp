@@ -113,6 +113,10 @@ void Simulator::reset() {
         throw std::runtime_error("economy contains no markets after reset");
     }
 
+    if (bFixedCostForExistence) {
+        set_fixed_cost_for_existence();
+    }
+
     // Clear out the agent turn order
     vecAgentTurnOrder.clear();
 
@@ -325,7 +329,7 @@ void Simulator::init_firms_for_agents() {
     }
 }
 
-int Simulator::set_fixed_cost_for_existence() {
+void Simulator::set_fixed_cost_for_existence() {
     int iMicroStepsPerSim = this->iMacroStepsPerSim * get_micro_steps_per_macro_step();
 
     // Set the fixed cost for existence such that capital depletes linearly to zero over the course of the simulation
@@ -333,8 +337,6 @@ int Simulator::set_fixed_cost_for_existence() {
     double dbDefaultStartingCapital = firm_parameters["starting_capital"];
 
     this->dbFixedCostForExistence = dbDefaultStartingCapital / iMicroStepsPerSim;
-
-    return 0;
 }
 
 void Simulator::init_master_history() {
