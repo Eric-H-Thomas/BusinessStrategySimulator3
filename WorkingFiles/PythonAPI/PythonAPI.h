@@ -7,12 +7,13 @@
 #include "../Simulator/Simulator.h"
 #include <iostream>
 #include <string>
+#include <vector>
+#include <tuple>
 
-using std::cerr;
 using std::cout;
 using std::endl;
 using std::tuple;
-using std::map;
+using std::vector;
 
 class PythonAPI {
 public:
