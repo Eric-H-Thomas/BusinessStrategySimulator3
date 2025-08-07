@@ -43,3 +43,6 @@
 
 # IDE-specific files
 .idea/
+
+# Trained agent files
+/AgentFiles

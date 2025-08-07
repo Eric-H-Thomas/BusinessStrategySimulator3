@@ -147,7 +147,7 @@ void Simulator::reset() {
         if (is_ai_agent(pair.first)) {
             auto firmPtr = get_firm_ptr_from_agent_id(pair.first);
             mapAIAgentIDToCapitalAtLastTurn[pair.first] = firmPtr->getDbCapital();
-            mapAIAgentIDToMicroTimeStepOfLastTurn[pair.first] = 0;
+            mapAIAgentIDToMicroTimeStepOfLastTurn[pair.first] = -1; // Set to -1 to avoid error of no time having passed before first reward
         }
     }
 
