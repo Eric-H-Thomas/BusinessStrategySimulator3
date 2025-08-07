@@ -33,11 +33,11 @@ public:
     void init_data_cache(SimulationHistory* pCurrentSimulationHistory);
     void prepare_to_run();
     void set_agent_turn_order();
-    // vector<int> get_agent_turn_order();
+    vector<int> get_agent_turn_order();
     void reset();
     void run();
     int get_num_sims() const;
-    // int get_macro_steps_per_sim() const;
+    int get_macro_steps_per_sim() const;
     int iCurrentMacroTimeStep = 0;
     int iCurrentMicroTimeStep = 0;
     MasterHistory masterHistory;
@@ -66,7 +66,7 @@ public:
     [[nodiscard]] int get_num_AI_agents() const;
     int get_num_total_agents();
     bool at_beginning_of_macro_step();
-    // int get_num_markets();
+    int get_num_markets();
     string strResultsDir;
 
 private:

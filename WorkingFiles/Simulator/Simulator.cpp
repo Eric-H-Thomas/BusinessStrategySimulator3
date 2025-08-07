@@ -53,8 +53,8 @@ Simulator::Simulator() = default;
 
 
 int Simulator::get_num_sims() const { return iNumSims; }
-// int Simulator::get_macro_steps_per_sim() const { return iMacroStepsPerSim; }
-// vector<int> Simulator::get_agent_turn_order() { return vecAgentTurnOrder; }
+int Simulator::get_macro_steps_per_sim() const { return iMacroStepsPerSim; }
+vector<int> Simulator::get_agent_turn_order() { return vecAgentTurnOrder; }
 
 
 void Simulator::load_json_configs(const string& strConfigFilePath) {
@@ -1304,9 +1304,9 @@ set<int> Simulator::get_set_market_IDs() {
     return economy.get_set_market_IDs();
 }
 
-//int Simulator::get_num_markets() {
-//    return economy.get_total_markets();
-//}
+int Simulator::get_num_markets() {
+    return economy.get_total_markets();
+}
 
 set<int> Simulator::get_firm_IDs_in_market(const Market& market) {
     set<int> setFirmIDs;
