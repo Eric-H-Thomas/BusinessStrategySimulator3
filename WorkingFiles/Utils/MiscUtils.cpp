@@ -8,6 +8,7 @@
 #include <random>
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 int MiscUtils::choose_index_given_probabilities(const std::vector<double>& probabilities) {
     // Check if the probabilities vector is empty
@@ -15,9 +16,15 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
         throw std::invalid_argument("choose_index_given_probabilities: empty probability vector");
     }
 
-    // Check that the probabilities sum to 100 (probabilities are given as whole percentages)
+    // Check that all probabilities are non-negative and sum to 100 (probabilities are given as whole percentages)
     double dbSum = 0.0;
-    for (double probability : probabilities) {
+    for (size_t i = 0; i < probabilities.size(); ++i) {
+        double probability = probabilities[i];
+        if (probability < 0.0) {
+            throw std::invalid_argument(
+                    "choose_index_given_probabilities: probability at index " +
+                    std::to_string(i) + " is negative");
+        }
         dbSum += probability;
     }
     if (std::fabs(100.0 - dbSum) > 1E-12) { // Allow for tiny numerical imprecision
