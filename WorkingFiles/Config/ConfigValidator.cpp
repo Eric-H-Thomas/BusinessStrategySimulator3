@@ -37,6 +37,8 @@ void validate_config(const std::string& strConfigFilePath) {
             "simulation_parameters.macro_steps_per_sim must be an integer");
     require(sim.contains("skipped_turns_per_regular_turn") && sim["skipped_turns_per_regular_turn"].is_number_integer(),
             "simulation_parameters.skipped_turns_per_regular_turn must be an integer");
+    require(sim["skipped_turns_per_regular_turn"].get<int>() >= 0,
+            "simulation_parameters.skipped_turns_per_regular_turn must be non-negative");
     require(sim.contains("generate_master_output") && sim["generate_master_output"].is_boolean(),
             "simulation_parameters.generate_master_output must be a boolean");
     require(sim.contains("verbose") && sim["verbose"].is_boolean(),
