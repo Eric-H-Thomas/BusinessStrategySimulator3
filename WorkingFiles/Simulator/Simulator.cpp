@@ -109,7 +109,6 @@ void Simulator::reset() {
 
     // Ensure that the economy has markets after any reset
     if (this->economy.get_vec_markets().empty()) {
-        cerr << "Error: economy contains no markets after reset" << endl;
         throw std::runtime_error("economy contains no markets after reset");
     }
 
@@ -653,8 +652,10 @@ void Simulator::perform_micro_step_helper(const vector<Action>& vecActions) {
     iCurrentMicroTimeStep++;
 
     // Increment the macro step if necessary
-    if (at_beginning_of_macro_step())
+    if (at_beginning_of_macro_step()) {
         iCurrentMacroTimeStep++;
+    }
+
 }
 
 vector<Action> Simulator::get_actions_for_all_agents_control_agent_turn(const int& iActingAgentID) {
@@ -662,26 +663,32 @@ vector<Action> Simulator::get_actions_for_all_agents_control_agent_turn(const in
     vector<Action> vecActions;
     for (const auto& pair : mapAgentIDToAgentPtr) {
         auto agentPtr = pair.second;
+
+        // Create actions for the control agents
         if (agentPtr->enumAgentType == AgentType::Control) {
             auto controlAgentPtr = dynamic_cast<ControlAgent*>(agentPtr);
+
             // Get action for the acting agent
             if (agentPtr->get_agent_ID() == iActingAgentID) {
                 try {
                     vecActions.emplace_back(get_agent_action(*controlAgentPtr));
                 }
                 catch (const std::exception& e) {
-                    cerr << "Error getting actions for control agents" << e.what() << endl;
-                    throw std::exception();
+                    throw std::runtime_error("Error getting actions for control agents");
                 }
             }
-            else { // Create none actions for the agents not currently acting
+
+            // Create none actions for the agents not currently acting
+            else {
                 vecActions.emplace_back(Action::generate_none_action(controlAgentPtr->get_agent_ID()));
             }
         }
-            // Create none actions for the AI agents
+
+        // Create none actions for the AI agents
         else if (agentPtr->enumAgentType == AgentType::StableBaselines3) {
             vecActions.emplace_back(Action::generate_none_action(agentPtr->get_agent_ID()));
         }
+
     }
     return vecActions;
 }
@@ -979,8 +986,7 @@ Action Simulator::get_entry_action(const ControlAgent& agent) {
     }
     else {
         // Should never reach this part of the code
-        cerr << "Error getting action_type" << endl;
-        throw std::exception();
+        throw std::runtime_error("Error getting action_type");
     }
 
     // Construct and return the action object
@@ -1738,7 +1744,7 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
     return vecDbPrices;
 }
 
-// Generates reward for the specified RL agent as its change in capital since the last time it acted
+// Generates reward for the specified RL agent as its average change in capital per micro step since the last time it acted
 // Put [[maybe_unused]] to get compiler to stop throwing warnings until we add the SB3 interface code
 [[maybe_unused]] double Simulator::generate_reward(const int& iAgentID) {
     // Calculate average capital change since the last time this agent acted

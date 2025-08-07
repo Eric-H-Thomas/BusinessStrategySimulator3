@@ -23,23 +23,29 @@ int main(int argc, char* argv[]) {
             throw std::invalid_argument("Expected 1 command-line argument. Got " + std::to_string(argc - 1));
         }
 
+        // Initialize the simulator, validate and load the configs, and prepare the simulator to run
         Simulator simulator;
         validate_config(argv[1]);
         simulator.load_json_configs(argv[1]);
         simulator.prepare_to_run();
 
+        // Loop over the simulations
         for (int iSim = 0; iSim < simulator.get_num_sims(); iSim++) {
+            // Reflect to the CRT the index of the current simulation
             cout << "Beginning simulation " << iSim << " of " << simulator.get_num_sims() - 1 << " (indexed at 0)" << endl;
-            simulator.reset();
 
+            // Reset and run the simulator
+            simulator.reset();
             simulator.run();
         }
 
+        // Generate the output files
         if (simulator.bGenerateMasterOutput) {
             simulator.masterHistory.generate_master_output();
             simulator.masterHistory.generate_market_overlap_file();
         }
     }
+
     catch (const std::exception& e) {
         cerr << e.what() << endl;
         return 1;

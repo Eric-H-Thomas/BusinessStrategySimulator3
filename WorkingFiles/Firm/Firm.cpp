@@ -101,8 +101,7 @@ Market Firm::choose_market_with_highest_overlap(const set<Market>& setMarkets) {
     }
 
     if (setMarketsWithHighestOverlap.empty()) {
-        std::cerr << "Error in getting market with highest overlap for firm" << std::endl;
-        throw std::runtime_error("no markets to choose from");
+        throw std::runtime_error("Error in getting market with highest overlap for firm");
     }
 
     return MiscUtils::choose_random_from_set(setMarketsWithHighestOverlap);
