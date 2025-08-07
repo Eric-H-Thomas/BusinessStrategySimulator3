@@ -52,11 +52,15 @@ class BusinessStrategyEnv(gym.Env):
         self.observation_space = obs_space
 
     def reset(self, seed=None, options=None):
-        observation, info = self.python_API.reset(), {}
+        super().reset(seed=seed)
+        observation = np.array(self.python_API.reset(), dtype=np.float32)
+        info = {}
         return observation, info
 
     def step(self, action):
         observation, reward, terminated, truncated = self.python_API.step(action)
+        observation = np.array(observation, dtype=np.float32)
+        reward = float(reward)
         info = {}
         return observation, reward, terminated, truncated, info
 
@@ -65,7 +69,6 @@ class BusinessStrategyEnv(gym.Env):
 
     def close(self):
         self.python_API.close()
-
 
 if __name__ == "__main__":
     from pathlib import Path
