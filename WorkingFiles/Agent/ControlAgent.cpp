@@ -5,11 +5,8 @@
 #include "ControlAgent.h"
 #include "../Utils/StringUtils.h"
 #include <vector>
-#include <iostream>
 #include <stdexcept>
-using std::endl;
 using std::vector;
-using std::cerr;
 
 #define NOT_YET_SET (-1)
 

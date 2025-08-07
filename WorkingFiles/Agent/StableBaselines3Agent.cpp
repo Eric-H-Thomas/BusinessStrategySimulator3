@@ -5,6 +5,7 @@
 #include "StableBaselines3Agent.h"
 
 #include <utility>
+#include <stdexcept>
 StableBaselines3Agent::StableBaselines3Agent(int iAgentID, ProductionPolicy productionPolicy, string strPathToAgent) {
     // Set the agent type
     this->enumAgentType = AgentType::StableBaselines3;
@@ -37,9 +38,7 @@ string StableBaselines3Agent::to_string() const {
         output += "Cournot";
     }
     else {
-
-        cerr << "Haha nice try bud. Production policy not yet configured in control agent toString method" << endl;
-        throw std::exception();
+        throw std::runtime_error("Haha nice try bud. Production policy not yet configured in control agent toString method");
     }
 
     return output;

@@ -4,11 +4,8 @@
 
 #pragma once
 #include <string>
-#include <iostream>
 #include "BaseAgent.h"
 using std::string;
-using std::cerr;
-using std::endl;
 
 class StableBaselines3Agent : public BaseAgent {
 public:
