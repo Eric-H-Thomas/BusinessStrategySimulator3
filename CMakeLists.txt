@@ -36,7 +36,8 @@ set(COMMON_SOURCES
         WorkingFiles/DataCache/DataCache.h
         WorkingFiles/Agent/BaseAgent.cpp WorkingFiles/Agent/BaseAgent.h WorkingFiles/Agent/StableBaselines3Agent.cpp WorkingFiles/Agent/StableBaselines3Agent.h
         WorkingFiles/PythonAPI/PythonAPI.cpp
-        WorkingFiles/PythonAPI/PythonAPI.h)
+        WorkingFiles/PythonAPI/PythonAPI.h
+        WorkingFiles/python_wrapper.cpp)
 
 
 # Executable target
