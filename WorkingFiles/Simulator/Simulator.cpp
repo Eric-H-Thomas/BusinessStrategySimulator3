@@ -43,7 +43,7 @@ void Simulator::run(py::object simulate_function) {
                 vector<double> stateObs = generate_state_observation(iAgentID);
                 py::tuple obs = py::tuple(py::cast(stateObs));
 
-                py::object result = simulate_function(mapAgentIDToAgentPtr[iAgentID]->get_path_to_agent().c_str(),obs);
+                py::object result = simulate_function(mapAgentIDToAgentPtr[iAgentID]->get_path_to_agent(), obs);
 
                 int action = result.cast<int>();
 
