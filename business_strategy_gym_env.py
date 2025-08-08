@@ -48,6 +48,10 @@ class BusinessStrategyEnv(gym.Env):
         obs_low = np.append(obs_low, np.zeros(2 * num_agents * num_markets))
         obs_high = np.append(obs_high, np.full(2 * num_agents * num_markets, np.finfo(np.float32).max))
 
+        # Convert the observation space's lower and upper bounds to np.float32
+        obs_low = obs_low.astype(np.float32)
+        obs_high = obs_high.astype(np.float32)
+
         obs_space = gym.spaces.Box(low=obs_low, high=obs_high, dtype=np.float32)
         self.observation_space = obs_space
 
@@ -103,3 +107,4 @@ if __name__ == "__main__":
     model.learn(total_timesteps=total_steps)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(args.output))
+    env.close()

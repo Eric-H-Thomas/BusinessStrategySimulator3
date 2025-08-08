@@ -20,7 +20,6 @@ public:
     void init_simulator(const string& strJsonConfigs);
     vector<double> reset(); // Returns observation
     tuple<vector<double>, double, bool, bool> step(int iActionID); // Returns tuple containing observation, reward, terminated, truncated
-    tuple<vector<double>, double, bool, bool> step_helper();
     void close();
 
     // Helper functions for defining the state and action spaces
@@ -28,5 +27,6 @@ public:
     int get_num_agents();
 
 private:
+    tuple<vector<double>, double, bool, bool> step_helper();
     Simulator simulator;
 };
