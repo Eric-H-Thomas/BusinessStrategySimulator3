@@ -41,7 +41,7 @@ void Simulator::run(py::object simulate_function) {
 
                 // Create a state observation to show the AI agent the current economic situation
                 vector<double> stateObs = generate_state_observation(iAgentID);
-                py::tuple obs = py::tuple(py::cast(stateObs));
+                py::tuple obs = py::cast(stateObs);
 
                 py::object result = simulate_function(mapAgentIDToAgentPtr[iAgentID]->get_path_to_agent(), obs);
 
