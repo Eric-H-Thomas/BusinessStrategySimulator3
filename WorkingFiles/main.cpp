@@ -9,10 +9,13 @@ Use business_strategy_gym_env.py or another Python script for training AI agents
 #include <stdexcept>
 #include "Simulator/Simulator.h"
 #include "Config/ConfigValidator.h"
+#include <pybind11/embed.h> // everything needed for embedding
+#include <pybind11/pybind11.h>
 
 using std::cout;
 using std::endl;
 
+namespace py = pybind11;
 
 int main(int argc, char* argv[]) {
 
@@ -21,6 +24,19 @@ int main(int argc, char* argv[]) {
         if (argc != 2) {
             throw std::invalid_argument("Expected 1 command-line argument. Got " + std::to_string(argc - 1));
         }
+
+        py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+        py::object simulate_function;
+
+        // Add the directory containing the script to the Python path
+        py::module::import("sys").attr("path").attr("append")("AgentFiles/Agent.zip");
+
+        // Import the script
+        py::module script = py::module::import("simulator");
+
+        // Set the simulate function py::object equal to the simulator.py simulate function
+        simulate_function = script.attr("simulate");
+
 
         // Initialize the simulator, validate and load the configs, and prepare the simulator to run
         Simulator simulator;
@@ -35,7 +51,7 @@ int main(int argc, char* argv[]) {
 
             // Reset and run the simulator
             simulator.reset();
-            simulator.run();
+            simulator.run(simulate_function);
         }
 
         // Generate the output files

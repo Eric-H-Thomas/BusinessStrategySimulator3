@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <string>
+#include <pybind11/stl.h>
 
 using std::map;
 using std::vector;
@@ -22,7 +23,7 @@ Note that the run method should not be used while training AI agents! This metho
 involving heuristic agents and/or trained AI agents.
 */
 
-void Simulator::run() {
+void Simulator::run(py::object simulate_function) {
     // Loop through the macro steps
     for (int iMacroStep = 0; iMacroStep < iMacroStepsPerSim; iMacroStep++) {
         if (bVerbose) {
@@ -38,9 +39,13 @@ void Simulator::run() {
             }
             else { // (is AI agent)
 
-                // This is where we will later create a state observation, pass it to the RL algorithm, and get
-                // back an action. For now, we'll just set the AI agent's action to 0.
-                int action = 0;
+                // Create a state observation to show the AI agent the current economic situation
+                vector<double> stateObs = generate_state_observation(iAgentID);
+                py::tuple obs = py::tuple(py::cast(stateObs));
+
+                py::object result = simulate_function(mapAgentIDToAgentPtr[iAgentID]->get_path_to_agent().c_str(),obs);
+
+                int action = result.cast<int>();
 
                 // Execute the micro step with the action chosen by the AI agent
                 perform_micro_step_ai_agent_turn(iAgentID, action);

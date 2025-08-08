@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <pybind11/embed.h> // everything needed for embedding
 #include <vector>
 #include <map>
 #include <vector>
@@ -22,6 +23,7 @@
 using std::map;
 using std::vector;
 using std::string;
+namespace py = pybind11;
 
 class Simulator {
 public:
@@ -35,7 +37,7 @@ public:
     void set_agent_turn_order();
     vector<int> get_agent_turn_order();
     void reset();
-    void run();
+    void run(py::object simulate_function);
     int get_num_sims() const;
     int get_macro_steps_per_sim() const;
     int iCurrentMacroTimeStep = 0;
