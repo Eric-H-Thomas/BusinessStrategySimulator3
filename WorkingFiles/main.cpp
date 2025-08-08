@@ -28,8 +28,8 @@ int main(int argc, char* argv[]) {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
         py::object simulate_function;
 
-        // Add the directory containing the script to the Python path
-        py::module::import("sys").attr("path").attr("append")("AgentFiles/Agent.zip");
+        // Add the project root (which contains simulator.py) to the Python path
+        py::module::import("sys").attr("path").attr("append")("../");
 
         // Import the script
         py::module script = py::module::import("simulator");
