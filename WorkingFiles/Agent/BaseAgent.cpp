@@ -8,6 +8,6 @@ int BaseAgent::get_agent_ID() const {
     return iAgentID;
 }
 
-[[maybe_unused]] string BaseAgent::get_path_to_agent() const {
+[[maybe_unused]] const string& BaseAgent::get_path_to_agent() const {
     return strPathToAgent;
 }

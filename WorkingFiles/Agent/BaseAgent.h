@@ -24,7 +24,7 @@ public:
     [[nodiscard]] virtual string to_string() const = 0;
     [[nodiscard]] virtual ProductionPolicy get_enum_production_policy() const = 0;
     [[nodiscard]] int get_agent_ID() const;
-    [[maybe_unused]] [[nodiscard]] string get_path_to_agent() const;
+    [[maybe_unused]] [[nodiscard]] const string& get_path_to_agent() const;
     virtual ~BaseAgent() = default;
 
 protected:
