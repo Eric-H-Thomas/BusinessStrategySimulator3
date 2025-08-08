@@ -43,7 +43,12 @@ void Simulator::run(py::object simulate_function) {
                 vector<double> stateObs = generate_state_observation(iAgentID);
                 py::tuple obs = py::cast(stateObs);
 
-                py::object result = simulate_function(mapAgentIDToAgentPtr[iAgentID]->get_path_to_agent(), obs);
+                auto it = mapAgentIDToAgentPtr.find(iAgentID);
+                if (it == mapAgentIDToAgentPtr.end() || it->second == nullptr) {
+                    throw std::runtime_error("AI agent ID " + std::to_string(iAgentID) + " not found or null");
+                }
+
+                py::object result = simulate_function(it->second->get_path_to_agent(), obs);
 
                 int action = result.cast<int>();
 
