@@ -88,6 +88,7 @@ def make_env(config_path, seed: int) -> Callable[[], BusinessStrategyEnv]:
 if __name__ == "__main__":
     from pathlib import Path
     import argparse
+    import torch
     import stable_baselines3
     from stable_baselines3.common.vec_env import SubprocVecEnv
 
@@ -106,19 +107,31 @@ if __name__ == "__main__":
         help="Path where the trained model will be saved.",
     )
     parser.add_argument(
-        "--num_updates", type=int, default=1, help="Number of PPO update iterations."
+        "--num_updates", type=int, default=100, help="Number of PPO update iterations."
     )
     parser.add_argument(
-        "--n-envs", type=int, default=1, help="Number of parallel environments."
+        "--n-envs", type=int, default=10, help="Number of parallel environments."
     )
+    parser.add_argument(
+        "--use_gpu",
+        action="store_true",
+        help="Use the MPS GPU if available instead of the CPU.",
+    )
+
     args = parser.parse_args()
+
+    device = (
+        torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        if args.use_gpu
+        else "cpu"
+    )
 
     n_steps = 2048  # StableBaselines3 default value
     total_steps = n_steps * args.n_envs * args.num_updates
 
     env_fns = [make_env(args.config, i) for i in range(args.n_envs)]
     env = SubprocVecEnv(env_fns)
-    model = stable_baselines3.PPO("MlpPolicy", env, verbose=1)
+    model = stable_baselines3.PPO("MlpPolicy", env, device=device, verbose=1)
     model.learn(total_timesteps=total_steps)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(args.output))
