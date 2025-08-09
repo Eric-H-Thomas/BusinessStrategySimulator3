@@ -12,6 +12,6 @@ def simulate(path, obs: tuple):
         if not os.path.isfile(path):
             raise FileNotFoundError(f"Model file not found at: {path}")
         model = PPO.load(path)
-    convertedObs = np.array(obs, dtype=np.float32)
-    action, _hidden = model.predict(convertedObs, deterministic=True)
+    converted_obs = np.array(obs, dtype=np.float32)
+    action, _hidden = model.predict(converted_obs, deterministic=True)
     return int(action)

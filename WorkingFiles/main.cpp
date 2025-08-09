@@ -25,7 +25,11 @@ int main(int argc, char* argv[]) {
             throw std::invalid_argument("Expected 1 command-line argument. Got " + std::to_string(argc - 1));
         }
 
-        py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+        // The scoped interpreter allows C++ to interpret Python as long as the interpreter is in scope
+        py::scoped_interpreter guard{};
+
+        // py::object is the C++ side’s generic reference to any Python value, such as a number, string, function,
+        // list, or user-defined class instance
         py::object simulate_function;
 
         // Add the project root (which contains simulator.py) to the Python path
@@ -36,7 +40,6 @@ int main(int argc, char* argv[]) {
 
         // Set the simulate function py::object equal to the simulator.py simulate function
         simulate_function = script.attr("simulate");
-
 
         // Initialize the simulator, validate and load the configs, and prepare the simulator to run
         Simulator simulator;

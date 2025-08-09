@@ -58,7 +58,7 @@
       "agent_id": 4,
       "agent_type": "stable_baselines_3",
       "production_policy": "Cournot",
-      "path_to_agent": "/Users/eric/CLionProjects/BusinessStrategy2.0/AgentFiles/Agent.zip",
+      "path_to_agent": "/Users/eric/CLionProjects/BusinessStrategySimulator3/AgentFiles/Agent.zip",
       "RL_Algorithm": "PPO"
     }
   ],

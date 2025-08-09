@@ -37,7 +37,7 @@ public:
     void set_agent_turn_order();
     vector<int> get_agent_turn_order();
     void reset();
-    void run(py::object simulate_function);
+    void run(const py::object& simulate_function);
     int get_num_sims() const;
     int get_macro_steps_per_sim() const;
     int iCurrentMacroTimeStep = 0;

@@ -23,7 +23,8 @@ Note that the run method should not be used while training AI agents! This metho
 involving heuristic agents and/or trained AI agents.
 */
 
-void Simulator::run(py::object simulate_function) {
+void Simulator::run(const py::object& simulate_function) {
+
     // Loop through the macro steps
     for (int iMacroStep = 0; iMacroStep < iMacroStepsPerSim; iMacroStep++) {
         if (bVerbose) {
