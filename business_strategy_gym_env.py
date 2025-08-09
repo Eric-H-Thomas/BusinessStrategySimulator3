@@ -75,6 +75,8 @@ class BusinessStrategyEnv(gym.Env):
         self.python_API.close()
 
 if __name__ == "__main__":
+    import torch
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     from pathlib import Path
     import argparse
     import stable_baselines3
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     total_steps = n_steps * n_envs * args.num_updates
 
     env = BusinessStrategyEnv(str(args.config))
-    model = stable_baselines3.PPO("MlpPolicy", env, verbose=1)
+    model = stable_baselines3.PPO("MlpPolicy", env, device=device, verbose=1)
     model.learn(total_timesteps=total_steps)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(args.output))
