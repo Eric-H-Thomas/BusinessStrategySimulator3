@@ -3,8 +3,9 @@
 ## Requirements
 
 This environment relies on PyTorch for training reinforcement learning agents.
-To take advantage of Apple Silicon GPUs, install PyTorch ≥1.12 with MPS
-support. The MPS backend is available in official releases and nightly builds:
+CPU training works out of the box. To train on Apple Silicon GPUs, run the
+script with the `--use_gpu` flag and install PyTorch ≥1.12 with MPS support.
+The MPS backend is available in official releases and nightly builds:
 
 ```bash
 pip install torch --pre --index-url https://download.pytorch.org/whl/nightly/cpu

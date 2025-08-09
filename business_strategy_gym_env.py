@@ -75,10 +75,9 @@ class BusinessStrategyEnv(gym.Env):
         self.python_API.close()
 
 if __name__ == "__main__":
-    import torch
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     from pathlib import Path
     import argparse
+    import torch
     import stable_baselines3
 
     parser = argparse.ArgumentParser(description="Train a PPO agent in the BusinessStrategyEnv.")
@@ -98,7 +97,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_updates", type=int, default=1, help="Number of PPO update iterations."
     )
+    parser.add_argument(
+        "--use_gpu",
+        action="store_true",
+        help="Use the MPS GPU if available instead of the CPU.",
+    )
     args = parser.parse_args()
+
+    device = (
+        torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        if args.use_gpu
+        else "cpu"
+    )
 
     n_steps = 2048  # StableBaselines3 default value
     n_envs = 1  # StableBaselines3 default value
