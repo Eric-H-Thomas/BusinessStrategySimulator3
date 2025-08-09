@@ -2,6 +2,8 @@ import simulator_module
 import gymnasium as gym
 import numpy as np
 
+from typing import Callable
+
 class BusinessStrategyEnv(gym.Env):
     def __init__(self, path_to_config_file):
         super().__init__()
@@ -74,10 +76,20 @@ class BusinessStrategyEnv(gym.Env):
     def close(self):
         self.python_API.close()
 
+
+def make_env(config_path, seed: int) -> Callable[[], BusinessStrategyEnv]:
+    def _init():
+        env = BusinessStrategyEnv(str(config_path))
+        env.reset(seed=seed)
+        return env
+
+    return _init
+
 if __name__ == "__main__":
     from pathlib import Path
     import argparse
     import stable_baselines3
+    from stable_baselines3.common.vec_env import SubprocVecEnv
 
     parser = argparse.ArgumentParser(description="Train a PPO agent in the BusinessStrategyEnv.")
     base_dir = Path(__file__).resolve().parent
@@ -96,13 +108,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_updates", type=int, default=1, help="Number of PPO update iterations."
     )
+    parser.add_argument(
+        "--n-envs", type=int, default=1, help="Number of parallel environments."
+    )
     args = parser.parse_args()
 
     n_steps = 2048  # StableBaselines3 default value
-    n_envs = 1  # StableBaselines3 default value
-    total_steps = n_steps * n_envs * args.num_updates
+    total_steps = n_steps * args.n_envs * args.num_updates
 
-    env = BusinessStrategyEnv(str(args.config))
+    env_fns = [make_env(args.config, i) for i in range(args.n_envs)]
+    env = SubprocVecEnv(env_fns)
     model = stable_baselines3.PPO("MlpPolicy", env, verbose=1)
     model.learn(total_timesteps=total_steps)
     args.output.parent.mkdir(parents=True, exist_ok=True)
