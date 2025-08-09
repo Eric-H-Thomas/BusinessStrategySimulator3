@@ -4,7 +4,9 @@ BusinessStrategySimulator3 is a research playground for studying market entry an
 
 ## Overview
 
-Firms often expand into related markets where they can reuse materials, skills, and infrastructure. This simulator captures those relationships and lets agents decide when to enter or exit markets with different overlaps in required competencies. For example, Amazon leveraged its e-commerce expertise to enter cloud computing, while struggles in unrelated spaces like smartphones highlight the challenges of lacking required capabilities.
+Firms often expand into related product markets where they can reuse materials, skills, and infrastructure (which we refer to, collectively, as *capabilities*). For example, Amazon leveraged its e-commerce expertise to enter cloud computing, while struggles in unrelated spaces like smartphones highlight the challenges of lacking required capabilities.
+
+This simulator models market similarities and lets agents decide when to enter or exit markets with different overlaps in required capabilities. 
 
 ## Building the simulator
 
