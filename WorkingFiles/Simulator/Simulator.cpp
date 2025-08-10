@@ -175,6 +175,7 @@ void Simulator::set_simulation_parameters() {
         this->iMacroStepsPerSim = simulation_parameters["macro_steps_per_sim"];
         this->dbSkippedTurnsPerRegularTurn = simulation_parameters["skipped_turns_per_regular_turn"];
         this->bVerbose = simulation_parameters["verbose"];
+        this->bReduceOutputFileSize = simulation_parameters["reduce_output_file_size"];
         this->bFixedCostForExistence = simulation_parameters["fixed_cost_for_existence"];
         this->bGenerateMasterOutput = simulation_parameters["generate_master_output"];
         this->bRandomizeTurnOrderWithinEachMacroStep = simulation_parameters["randomize_turn_order_within_each_macro_step"];
@@ -1105,7 +1106,29 @@ void Simulator::init_simulation_history() {
     for (auto pair : mapAgentToFirm) {
         int iFirmID = pair.second;
         auto pAgent = get_agent_ptr_from_firm_ID(iFirmID);
-        mapFirmIDToAgentDescriptions[iFirmID] = pAgent->to_string();
+        if (bReduceOutputFileSize) {
+            string strAbbrev;
+            if (pAgent->enumAgentType == AgentType::StableBaselines3) {
+                strAbbrev = "AI";
+            }
+            else if (auto pControl = dynamic_cast<ControlAgent*>(pAgent)) {
+                if (pControl->get_enum_entry_policy() == EntryPolicy::HighestOverlap &&
+                    pControl->get_enum_exit_policy() == ExitPolicy::Loss) {
+                    strAbbrev = "S";
+                }
+                else {
+                    strAbbrev = "N";
+                }
+            }
+            else {
+                strAbbrev = "N";
+            }
+            mapFirmIDToAgentDescriptions[iFirmID] =
+                    std::to_string(pAgent->get_agent_ID()) + strAbbrev;
+        }
+        else {
+            mapFirmIDToAgentDescriptions[iFirmID] = pAgent->to_string();
+        }
     }
 
     // Initialize the simulation history using the above four maps
