@@ -6,6 +6,7 @@
     "skipped_turns_per_regular_turn": 1,
     "generate_master_output": true,
     "verbose": false,
+    "reduce_output_file_size": false,
     "randomize_turn_order_within_each_macro_step": true,
     "randomize_agent_firm_assignment_per_simulation": false,
     "randomize_variable_costs_per_simulation": true,

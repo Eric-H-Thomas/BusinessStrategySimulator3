@@ -43,6 +43,8 @@ void validate_config(const std::string& strConfigFilePath) {
             "simulation_parameters.generate_master_output must be a boolean");
     require(sim.contains("verbose") && sim["verbose"].is_boolean(),
             "simulation_parameters.verbose must be a boolean");
+    require(sim.contains("reduce_output_file_size") && sim["reduce_output_file_size"].is_boolean(),
+            "simulation_parameters.reduce_output_file_size must be a boolean");
     require(sim.contains("randomize_turn_order_within_each_macro_step") &&
             sim["randomize_turn_order_within_each_macro_step"].is_boolean(),
             "simulation_parameters.randomize_turn_order_within_each_macro_step must be a boolean");

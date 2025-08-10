@@ -93,6 +93,7 @@ private:
     // Markets are regenerated automatically when the economy is randomized.
     // This flag triggers market regeneration even when the economy remains the same.
     bool bRandomizeMarketsPerSimulation{};
+    bool bReduceOutputFileSize{};
 
 
     // Maps to track stats necessary for reward calculations
