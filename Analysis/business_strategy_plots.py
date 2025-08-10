@@ -9,6 +9,7 @@ Original file is located at
 # Average Bankruptcy Plots and Standard Error Plots (Blake)
 """
 
+import argparse
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
@@ -16,24 +17,42 @@ import pandas as pd
 import seaborn as sns
 import re
 import zipfile
-import os
+from pathlib import Path
 
-zip_filename = "Aug09_2025.zip"
 
-extract_folder = "/content/"
-os.makedirs(extract_folder, exist_ok=True)
+def load_data(zip_path: Path, csv_name: str) -> pd.DataFrame:
+    """Load a CSV file from within a ZIP archive.
 
-# Extract the ZIP file
-with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
-    zip_ref.extractall(extract_folder)
+    Parameters
+    ----------
+    zip_path : Path
+        Path to the ZIP archive containing the CSV.
+    csv_name : str
+        Name of the CSV file within the archive.
 
-df = pd.read_csv("/content/MasterOutput.csv")
-# df1 = pd.read_csv("MasterOutputVaryingMarketOverlapHigh.csv")
-# df2 = pd.read_csv("MasterOutputVaryingEconomyDifficultyDifficult.csv")
-# df3 = pd.read_csv("MasterOutputVaryingNumberAgents4S.csv")
-# df4 = pd.read_csv("MasterOutputVaryingNumberAgents5S.csv")
-# df5 = pd.read_csv("MasterOutputVaryingNumberAgents6S.csv")
-# df6 = pd.read_csv("MasterOutputVaryingNumberAgents7S.csv")
+    Returns
+    -------
+    pd.DataFrame
+        Data loaded from the CSV file.
+    """
+
+    with zipfile.ZipFile(zip_path) as zip_ref:
+        with zip_ref.open(csv_name) as csv_file:
+            return pd.read_csv(csv_file)
+
+
+parser = argparse.ArgumentParser(description="Business strategy plotting utilities")
+parser.add_argument("zip_path", type=Path, help="Path to the ZIP file containing simulation output")
+parser.add_argument("csv_name", help="Name of the CSV file within the ZIP archive")
+args, unknown = parser.parse_known_args()
+
+df = load_data(args.zip_path, args.csv_name)
+# df1 = load_data(args.zip_path, "MasterOutputVaryingMarketOverlapHigh.csv")
+# df2 = load_data(args.zip_path, "MasterOutputVaryingEconomyDifficultyDifficult.csv")
+# df3 = load_data(args.zip_path, "MasterOutputVaryingNumberAgents4S.csv")
+# df4 = load_data(args.zip_path, "MasterOutputVaryingNumberAgents5S.csv")
+# df5 = load_data(args.zip_path, "MasterOutputVaryingNumberAgents6S.csv")
+# df6 = load_data(args.zip_path, "MasterOutputVaryingNumberAgents7S.csv")
 
 # df.head()
 # df1.head()
@@ -208,10 +227,10 @@ def avg_bankruptcy_combined(dfs, labels, clear_previous=True):
 
 avg_bankruptcy_special_edition(df).show()
 
-x_labels = ["Low Market Overlap", "High Market Overlap"]
+# x_labels = ["Low Market Overlap", "High Market Overlap"]
 # x_labels = ["Very Easy Economy", "Easy Economy", "Difficult Economy"]
 # x_labels = ["1 Sophisticated", "2 Sophisticated", "3 Sophisticated", "4 Sophisticated", "5 Sophisticated", "6 Sophisticated", "7 Sophisticated"]
-avg_bankruptcy_combined(dfs, x_labels).show()
+# avg_bankruptcy_combined(dfs, x_labels).show()
 
 agent_types = np.array(df["Agent Type"].unique())
 avg_bankruptcies_per_agent_type = []
@@ -494,20 +513,13 @@ for agent_type, norm_value in normalized_changes.items():
 
 """# Overlap/Firm-Market Entry Plots (Jake)"""
 
-zip_filename = "MarketOverlapVarious.zip"
-
-extract_folder = "/content/"
-os.makedirs(extract_folder, exist_ok=True)
-
-# Extract the ZIP file
-with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
-    zip_ref.extractall(extract_folder)
+zip_filename = Path("MarketOverlapVarious.zip")
 
 # Read in data (change file names if needed)
-overlap = pd.read_csv('MarketOverlap4Random.csv')
+overlap = load_data(zip_filename, 'MarketOverlap4Random.csv')
 overlap = overlap.drop(columns=['Unnamed: 0', 'Unnamed: 6'])
 
-output = pd.read_csv('/content/MasterOutputVaryingAgentTypes4Random.csv')
+output = load_data(zip_filename, 'MasterOutputVaryingAgentTypes4Random.csv')
 output = output.drop(columns=['Unnamed: 0', 'Unnamed: 14'])
 overlap
 
