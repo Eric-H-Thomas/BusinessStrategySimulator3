@@ -5,11 +5,12 @@ import numpy as np
 from typing import Callable
 
 class BusinessStrategyEnv(gym.Env):
-    def __init__(self, path_to_config_file):
+    def __init__(self, path_to_config_file, reward_scale: float = 1.0):
         super().__init__()
         # INITIALIZE THE PYTHON API AND THE SIMULATOR
         self.python_API = simulator_module.PythonAPI()
         self.python_API.init_simulator(path_to_config_file)
+        self.reward_scale = reward_scale
 
         num_agents = self.python_API.get_num_agents()
         num_markets = self.python_API.get_num_markets()
@@ -66,7 +67,7 @@ class BusinessStrategyEnv(gym.Env):
     def step(self, action):
         observation, reward, terminated, truncated = self.python_API.step(action)
         observation = np.array(observation, dtype=np.float32)
-        reward = float(reward)
+        reward = float(reward) * self.reward_scale
         info = {}
         return observation, reward, terminated, truncated, info
 
@@ -77,9 +78,9 @@ class BusinessStrategyEnv(gym.Env):
         self.python_API.close()
 
 
-def make_env(config_path, seed: int) -> Callable[[], BusinessStrategyEnv]:
+def make_env(config_path, seed: int, reward_scale: float) -> Callable[[], BusinessStrategyEnv]:
     def _init():
-        env = BusinessStrategyEnv(str(config_path))
+        env = BusinessStrategyEnv(str(config_path), reward_scale=reward_scale)
         env.reset(seed=seed)
         return env
 
@@ -117,6 +118,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the MPS GPU if available instead of the CPU.",
     )
+    parser.add_argument(
+        "--reward-scale",
+        type=float,
+        default=1.0,
+        help="Multiply raw rewards by this factor to match loss magnitudes.",
+    )
 
     args = parser.parse_args()
 
@@ -129,7 +136,7 @@ if __name__ == "__main__":
     n_steps = 2048  # StableBaselines3 default value
     total_steps = n_steps * args.n_envs * args.num_updates
 
-    env_fns = [make_env(args.config, i) for i in range(args.n_envs)]
+    env_fns = [make_env(args.config, i, args.reward_scale) for i in range(args.n_envs)]
     env = SubprocVecEnv(env_fns)
     model = stable_baselines3.PPO("MlpPolicy", env, device=device, verbose=1)
     model.learn(total_timesteps=total_steps)

@@ -29,6 +29,13 @@ Install Python dependencies (e.g., `gymnasium`, `stable-baselines3`, `torch`, an
 python business_strategy_gym_env.py --config WorkingFiles/Config/default.json --output AgentFiles/Agent.zip
 ```
 
+If rewards are much smaller than the losses reported during training, scale them with `--reward-scale` so the algorithm receives
+signals of comparable magnitude. For example, to multiply rewards by 1,000:
+
+```
+python business_strategy_gym_env.py --config WorkingFiles/Config/default.json --output AgentFiles/Agent.zip --reward-scale 1000
+```
+
 ## Using a trained model
 
 The `simulator.py` helper loads a saved model and returns an action for a given observation:
