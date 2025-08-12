@@ -654,13 +654,13 @@ void Simulator::perform_micro_step_helper(const vector<Action>& vecActions) {
             for (auto iMarketID : get_set_market_IDs()) {
                 auto pairFirmMarket = std::make_pair(firm->getFirmID(), iMarketID);
 
-                dataCache.mapFirmMarketComboToRevenue[pairFirmMarket] = 0.0;
-                dataCache.mapFirmMarketComboToFixedCost[pairFirmMarket] = 0.0;
-                dataCache.mapFirmMarketComboToVarCost[pairFirmMarket] = 0.0;
-                dataCache.mapFirmMarketComboToEntryCost[pairFirmMarket] = 0.0;
-                dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = 0.0;
-                dataCache.mapFirmMarketComboToQtyProduced[pairFirmMarket] = 0.0;
-                dataCache.mapFirmMarketComboToPrice[pairFirmMarket] = 0.0; // Will need to be made dynamic if the simulator is ever allowed to have more than one price per market
+                dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket) = 0.0;
+                dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket) = 0.0;
+                dataCache.mapFirmMarketComboToVarCost.at(pairFirmMarket) = 0.0;
+                dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket) = 0.0;
+                dataCache.mapFirmMarketComboToExitCost.at(pairFirmMarket) = 0.0;
+                dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket) = 0.0;
+                dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket) = 0.0; // Will need to be made dynamic if the simulator is ever allowed to have more than one price per market
             }
         }
     }
@@ -819,7 +819,7 @@ void Simulator::execute_entry_action(const Action& action, map<int, double>* pMa
     double dbFixedCostAsPctOfEntryCost = marketCopy.getFixedCostAsPercentageOfEntryCost();
     dbFixedCostAsPctOfEntryCost *= 0.01; // Scaling factor for percentage expressed as whole number
     double dbFixedCost = dbFixedCostAsPctOfEntryCost * dbEntryCost;
-    dataCache.mapFirmMarketComboToFixedCost[pairFirmMarket] = dbFixedCost;
+    dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket) = dbFixedCost;
     currentSimulationHistoryPtr->record_fixed_cost_change(iCurrentMicroTimeStep,
                                                           dbFixedCost, pairFirmMarket.first, pairFirmMarket.second);
 
@@ -827,7 +827,7 @@ void Simulator::execute_entry_action(const Action& action, map<int, double>* pMa
     double dbExitCostAsPctOfEntryCost = marketCopy.getExitCostAsPercentageOfEntryCost();
     dbExitCostAsPctOfEntryCost *= 0.01; // Scaling factor for percentage expressed as whole number
     double dbExitCost = dbExitCostAsPctOfEntryCost * dbEntryCost;
-    dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = dbExitCost;
+    dataCache.mapFirmMarketComboToExitCost.at(pairFirmMarket) = dbExitCost;
 
     // Update the firm's capability vector
     firmPtr->add_market_capabilities_to_firm_capabilities(economy.get_market_by_ID(action.iMarketID));
@@ -867,7 +867,7 @@ void Simulator::execute_entry_action(const Action& action, map<int, double>* pMa
         auto pair = std::make_pair(firmPtr->getFirmID(), market.get_market_id());
         double dbPriorCost = dataCache.mapFirmMarketComboToEntryCost.at(pair);
         if (dbCost != dbPriorCost) {
-            dataCache.mapFirmMarketComboToEntryCost[pair] = dbCost;
+            dataCache.mapFirmMarketComboToEntryCost.at(pair) = dbCost;
             currentSimulationHistoryPtr->record_entry_cost_change(iCurrentMicroTimeStep,
                                                                   dbCost, firmPtr->getFirmID(), market.get_market_id());
         }
@@ -902,7 +902,7 @@ void Simulator::execute_exit_action(const Action& action, map<int, double>* pMap
     pMapFirmIDToCapitalChange->at(firmPtr->getFirmID()) -= dbExitCost;
 
     // Update the fixed cost for this firm-market combo
-    dataCache.mapFirmMarketComboToFixedCost[pairFirmMarket] = 0.0;
+    dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket) = 0.0;
     currentSimulationHistoryPtr->record_fixed_cost_change(iCurrentMicroTimeStep,
                                                           0.0, pairFirmMarket.first, pairFirmMarket.second);
 
@@ -944,7 +944,7 @@ void Simulator::execute_exit_action(const Action& action, map<int, double>* pMap
         auto pair = std::make_pair(firmPtr->getFirmID(), market.get_market_id());
         double dbPriorCost = dataCache.mapFirmMarketComboToEntryCost.at(pair);
         if (dbCost != dbPriorCost) {
-            dataCache.mapFirmMarketComboToEntryCost[pair] = dbCost;
+            dataCache.mapFirmMarketComboToEntryCost.at(pair) = dbCost;
             currentSimulationHistoryPtr->record_entry_cost_change(iCurrentMicroTimeStep,
                                                                   dbCost, firmPtr->getFirmID(), market.get_market_id());
         }
@@ -954,10 +954,10 @@ void Simulator::execute_exit_action(const Action& action, map<int, double>* pMap
     currentSimulationHistoryPtr->record_revenue_change(iCurrentMicroTimeStep, 0.0, firmPtr->getFirmID(), action.iMarketID);
     currentSimulationHistoryPtr->record_price_change(iCurrentMicroTimeStep, 0.0, firmPtr->getFirmID(), action.iMarketID);
     currentSimulationHistoryPtr->record_production_quantity_change(iCurrentMicroTimeStep, 0.0, firmPtr->getFirmID(), action.iMarketID);
-    dataCache.mapFirmMarketComboToRevenue[pairFirmMarket] = 0.0;
-    dataCache.mapFirmMarketComboToPrice[pairFirmMarket] = 0.0;
-    dataCache.mapFirmMarketComboToQtyProduced[pairFirmMarket] = 0.0;
-    dataCache.mapFirmMarketComboToExitCost[pairFirmMarket] = 0.0;
+    dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket) = 0.0;
+    dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket) = 0.0;
+    dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket) = 0.0;
+    dataCache.mapFirmMarketComboToExitCost.at(pairFirmMarket) = 0.0;
 }
 
 Action Simulator::get_agent_action(const ControlAgent& agent) {
@@ -1304,14 +1304,14 @@ void Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) 
             if (dbRevenue != dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket)) {
                 currentSimulationHistoryPtr->record_revenue_change(iCurrentMicroTimeStep, dbRevenue,
                                                                    pairFirmMarket.first, pairFirmMarket.second);
-                dataCache.mapFirmMarketComboToRevenue[pairFirmMarket] = dbRevenue;
+                dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket) = dbRevenue;
             }
 
             // Update production quantities in the history and data cache if needed
             if (q != dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket)) {
                 currentSimulationHistoryPtr->record_production_quantity_change(iCurrentMicroTimeStep, q,
                                                                               pairFirmMarket.first, pairFirmMarket.second);
-                dataCache.mapFirmMarketComboToQtyProduced[pairFirmMarket] = q;
+                dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket) = q;
             }
 
             // Update prices in the history and data cache if needed
@@ -1320,7 +1320,7 @@ void Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) 
             if (P != dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket)) {
                 currentSimulationHistoryPtr->record_price_change(iCurrentMicroTimeStep, P,
                                                                  pairFirmMarket.first, pairFirmMarket.second);
-                dataCache.mapFirmMarketComboToPrice[pairFirmMarket] = P;
+                dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket) = P;
             }
         } // End of loop through firms
     } // End of loop through markets
@@ -1828,8 +1828,8 @@ vector<double> Simulator::get_price_representation(const int& iAgentID) {
     double dbAverageCapitalChange = dbCapitalChange / (iCurrentMicroTimeStep - iPreviousMicroTimeStep);
 
     // Update statistics for reward calculation
-    mapAIAgentIDToCapitalAtLastTurn[iAgentID] = dbCurrentCapital;
-    mapAIAgentIDToMicroTimeStepOfLastTurn[iAgentID] = iCurrentMicroTimeStep;
+    mapAIAgentIDToCapitalAtLastTurn.at(iAgentID) = dbCurrentCapital;
+    mapAIAgentIDToMicroTimeStepOfLastTurn.at(iAgentID) = iCurrentMicroTimeStep;
 
     return dbAverageCapitalChange;
 }
