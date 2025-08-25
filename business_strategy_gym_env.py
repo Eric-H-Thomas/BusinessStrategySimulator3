@@ -239,7 +239,6 @@ if __name__ == "__main__":
         env,
         gamma=0.999,
         learning_rate=0.0003, # Default is 0.0003
-        # target_kl=0.02, # Trip the early stop in an update if KL runs away
         device=device,
         verbose=1,
     )
@@ -249,11 +248,12 @@ if __name__ == "__main__":
     # Save model (and VecNormalize stats if used)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(args.output))
+
+    # These statistics are only necessary if comparing rewards at eval time. Since we are just running agents through
+    # simulations and plotting results (agnostic to however rewards were calculated during training), we don't need
+    # to do anything with these stats. But we still save them in case we decide to use them in the future.
     if args.normalize_reward:
         # Save the running mean/var so you can recreate the same normalization at eval time
         env.save(args.output.parent / "vecnormalize.pkl")
 
     env.close()
-
-
-    # TODO: Make sure that the normalized observations are getting used at inference time!
