@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
         // py::object is the C++ side’s generic reference to any Python value, such as a number, string, function,
         // list, or user-defined class instance
         py::object simulate_function;
+        py::object reset_norm_function;
 
         // Add the project root (which contains simulator.py) to the Python path
         py::module::import("sys").attr("path").attr("append")("../");
@@ -38,8 +39,9 @@ int main(int argc, char* argv[]) {
         // Import the script
         py::module script = py::module::import("simulator");
 
-        // Set the simulate function py::object equal to the simulator.py simulate function
+        // Grab simulator.py functions
         simulate_function = script.attr("simulate");
+        reset_norm_function = script.attr("reset_observation_normalization");
 
         // Initialize the simulator, validate and load the configs, and prepare the simulator to run
         Simulator simulator;
@@ -52,8 +54,9 @@ int main(int argc, char* argv[]) {
             // Reflect to the CRT the index of the current simulation
             cout << "Beginning simulation " << iSim << " of " << simulator.get_num_sims() - 1 << " (indexed at 0)" << endl;
 
-            // Reset and run the simulator
+            // Reset simulator state and normalization
             simulator.reset();
+            reset_norm_function(argv[1]);
             simulator.run(simulate_function);
         }
 
