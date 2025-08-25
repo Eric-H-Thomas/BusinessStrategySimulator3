@@ -167,12 +167,14 @@ def make_env(config_path, seed: int, normalize_observations: bool = False) -> Ca
 
     return _init
 
+
 if __name__ == "__main__":
     from pathlib import Path
     import argparse
     import torch
     import stable_baselines3
     from stable_baselines3.common.vec_env import SubprocVecEnv
+    from stable_baselines3.common.vec_env import VecNormalize  # NEW: for reward normalization
 
     parser = argparse.ArgumentParser(description="Train a PPO agent in the BusinessStrategyEnv.")
     base_dir = Path(__file__).resolve().parent
@@ -189,7 +191,7 @@ if __name__ == "__main__":
         help="Path where the trained model will be saved.",
     )
     parser.add_argument(
-        "--num_updates", type=int, default=100, help="Number of PPO update iterations."
+        "--num_updates", type=int, default=500, help="Number of PPO update iterations."
     )
     parser.add_argument(
         "--n-envs", type=int, default=10, help="Number of parallel environments."
@@ -199,10 +201,17 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the MPS GPU if available instead of the CPU.",
     )
+    # CHANGED: make this a normal on/off flag (default True)
     parser.add_argument(
         "--normalize_obs",
-        action="store_true",
-        help="Normalize observations to the [0,1] range during training.",
+        action="store_false",
+        help="Normalize observations to the [0,1] range inside the env.",
+    )
+    # NEW: reward normalization flag (default True to preserve old behavior)
+    parser.add_argument(
+        "--normalize_reward",
+        action="store_false",
+        help="Normalize rewards using VecNormalize (recommended).",
     )
 
     args = parser.parse_args()
@@ -216,10 +225,35 @@ if __name__ == "__main__":
     n_steps = 2048  # StableBaselines3 default value
     total_steps = n_steps * args.n_envs * args.num_updates
 
+    # Build vectorized envs
     env_fns = [make_env(args.config, i, normalize_observations=args.normalize_obs) for i in range(args.n_envs)]
     env = SubprocVecEnv(env_fns)
-    model = stable_baselines3.PPO("MlpPolicy", env, device=device, verbose=1)
+
+    # Wrap with VecNormalize ONLY for reward normalization (avoid double obs normalization)
+    if args.normalize_reward:
+        # norm_obs=False because the env already supports its own observation normalization
+        env = VecNormalize(env, norm_obs=False, norm_reward=True, clip_obs=10.0, clip_reward=10.0)
+
+    model = stable_baselines3.PPO(
+        "MlpPolicy",
+        env,
+        gamma=0.999,
+        learning_rate=0.0003, # Default is 0.0003
+        # target_kl=0.02, # Trip the early stop in an update if KL runs away
+        device=device,
+        verbose=1,
+    )
+
     model.learn(total_timesteps=total_steps)
+
+    # Save model (and VecNormalize stats if used)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(args.output))
+    if args.normalize_reward:
+        # Save the running mean/var so you can recreate the same normalization at eval time
+        env.save(args.output.parent / "vecnormalize.pkl")
+
     env.close()
+
+
+    # TODO: Make sure that the normalized observations are getting used at inference time!

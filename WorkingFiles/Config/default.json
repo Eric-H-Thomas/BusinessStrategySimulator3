@@ -1,7 +1,7 @@
 {
   "simulation_parameters": {
     "results_dir":"/Users/eric/Desktop/StrategyResearch/OutputFiles",
-    "num_sims": 100,
+    "num_sims": 8,
     "macro_steps_per_sim": 100,
     "skipped_turns_per_regular_turn": 1,
     "generate_master_output": true,
@@ -86,8 +86,8 @@
     "fixed_cost_percentage_of_entry": 5,
     "exit_cost_percentage_of_entry": 30,
 
-    "demand_intercept_max": 10,
-    "demand_intercept_min": 6,
+    "demand_intercept_max": 15,
+    "demand_intercept_min": 10,
 
     "market_entry_cost_max": 500,
     "market_entry_cost_min": 50,
