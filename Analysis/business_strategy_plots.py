@@ -27,6 +27,8 @@ def load_data(zip_path: Path, csv_name: str) -> pd.DataFrame:
         Data loaded from the CSV file.
     """
 
+    # ``zipfile.ZipFile`` allows reading a member file directly from the
+    # archive without extracting it to disk.
     with zipfile.ZipFile(zip_path) as zip_ref:
         with zip_ref.open(csv_name) as csv_file:
             return pd.read_csv(csv_file)
@@ -48,6 +50,8 @@ def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
     """
     agent_types = set(df["Agent Type"].tolist())
     for agent in agent_types:
+        # The agent type string encodes the strategy. Use simple pattern
+        # matching to map verbose names onto concise labels used in plots.
         sophisticated = re.search(r"HighestOverlap", agent)
         naive = re.search(r"All", agent)
         ai = re.search(r"StableBaselines3", agent)
@@ -80,6 +84,8 @@ def sort_by_agent_type_special_edition(df: pd.DataFrame) -> pd.DataFrame:
     sophisticated_suffixes = ["A", "B", "C", "D"]
     sophisticated_idx = 0
     for agent in agent_types:
+        # Similar pattern matching to ``sort_by_agent_type`` but we assign
+        # sequential suffixes to distinguish the sophisticated variants.
         sophisticated = re.search(r"HighestOverlap", agent)
         naive = re.search(r"All", agent)
         ai = re.search(r"StableBaselines3", agent)
@@ -118,6 +124,7 @@ def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
     avg_bankruptcies_per_agent_type = []
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
+        # Capital values of ``-1e-09`` denote bankruptcy in the output data.
         bankruptcy_cnt = agent_type_df["Capital"].value_counts().get(-1e-09, 0)
         avg_bankruptcies_per_agent_type.append(
             bankruptcy_cnt / len(agent_type_df["Capital"])
@@ -157,6 +164,7 @@ def avg_bankruptcy_special_edition(
     avg_bankruptcies_per_agent_type = []
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
+        # Capital values of ``-1e-09`` denote bankruptcy in the output data.
         bankruptcy_cnt = agent_type_df["Capital"].value_counts().get(-1e-09, 0)
         avg_bankruptcies_per_agent_type.append(
             bankruptcy_cnt / len(agent_type_df["Capital"])
@@ -199,12 +207,15 @@ def avg_bankruptcy_combined(dfs, labels, clear_previous=True):
     agent_types = sorted(agent_types, reverse=True)
     total_clusters = len(dfs)
     x = np.arange(total_clusters)
+    # Spread the bars for different agent types within each cluster so that
+    # clusters (datasets) occupy 80% of the available horizontal space.
     width = 0.8 / len(agent_types)
 
     for i, (df, label) in enumerate(zip(dfs, labels)):
         avg_bankruptcies_per_agent_type = []
         for agent_type in agent_types:
             agent_type_df = df[df["Agent Type"] == agent_type]
+            # Capital values of ``-1e-09`` denote bankruptcy in the output data.
             bankruptcy_cnt = agent_type_df["Capital"].value_counts().get(-1e-09, 0)
             avg_bankruptcies_per_agent_type.append(
                 bankruptcy_cnt / len(agent_type_df["Capital"])
@@ -213,6 +224,8 @@ def avg_bankruptcy_combined(dfs, labels, clear_previous=True):
         avg_bankruptcies_per_agent_type = np.array(avg_bankruptcies_per_agent_type)
 
         for j, agent_type in enumerate(agent_types):
+            # Offset each agent type within the cluster corresponding to the
+            # dataset ``i``.
             ax.bar(
                 x[i] + (j - len(agent_types) / 2) * width + width / 2,
                 avg_bankruptcies_per_agent_type[j] * 100,
@@ -227,6 +240,8 @@ def avg_bankruptcy_combined(dfs, labels, clear_previous=True):
 
     plt.tight_layout()
     return fig
+
+
 def aggregate_data_with_std(df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate market data and compute mean and standard deviation.
 
@@ -250,15 +265,28 @@ def aggregate_data_with_std(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
-    # Calculate mean and std across simulations for each step and agent type
+    # Calculate mean, standard deviation and count across simulations for each
+    # step and agent type. ``Rev`` is arbitrarily used for the ``count`` since
+    # all metrics share the same number of observations.
     sim_stats = (
         market_sum.groupby(["Step", "Agent Type"])
-        .agg({"Rev": ["mean", "std"], "Fix Cost": ["mean", "std"], "Var Cost": ["mean", "std"], "Capital": ["mean", "std"]})
+        .agg(
+            {
+                "Rev": ["mean", "std", "count"],
+                "Fix Cost": ["mean", "std"],
+                "Var Cost": ["mean", "std"],
+                "Capital": ["mean", "std"],
+            }
+        )
         .reset_index()
     )
 
     # Flatten the MultiIndex columns produced by aggregation
     sim_stats.columns = ["_".join(col).strip("_") for col in sim_stats.columns]
+
+    # ``Rev_count`` holds the number of simulations (or simulation-firm pairs)
+    # contributing to each mean value. Rename for clarity and return.
+    sim_stats.rename(columns={"Rev_count": "Count"}, inplace=True)
 
     return sim_stats
 
@@ -269,8 +297,8 @@ def performance_summary_std_error(
     if clear_previous:
         plt.close("all")
 
+    # Aggregate the raw data and include counts needed for the standard error.
     df = aggregate_data_with_std(df)
-    n = len(df)  # For standard error calculation
 
     fig, axes = plt.subplots(5, 1, figsize=(12, 15), sharex=True)
     metrics = ["Profit", "Rev", "Total Cost", "Fix Cost", "Var Cost"]
@@ -325,10 +353,14 @@ def performance_summary_std_error(
                 linewidth=1,
             )
 
+            # Standard error for each step is ``std / sqrt(n)`` where ``n`` is
+            # the number of simulations contributing to that point. The
+            # ``Count`` column returned by ``aggregate_data_with_std`` contains
+            # this value for every step.
             ax.fill_between(
                 agent_type_df["Step"],
-                (mean_values - (std_values / np.sqrt(n))).clip(lower=0),
-                mean_values + (std_values / np.sqrt(n)),
+                (mean_values - (std_values / np.sqrt(agent_type_df["Count"]))).clip(lower=0),
+                mean_values + (std_values / np.sqrt(agent_type_df["Count"])),
                 color=type_to_color[agent_type],
                 alpha=0.2,
             )
@@ -383,6 +415,7 @@ def plot_cumulative_capital(
     agent_types = sorted(df["Agent Type"].unique())
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
+        # Plot average capital trajectory for the current agent type.
         ax.plot(
             agent_type_df["Step"],
             agent_type_df["Capital_mean"],
@@ -423,15 +456,16 @@ def plot_cumulative_capital_special_edition(
     type_to_color = {
         "AI": "#79AEA3",  # Teal
         "Naive": "#9E4770",  # Deep Magenta
+        "Sophisticated A": "#1446A0",  # Deep Blue
         "Sophisticated B": "#2166C4",  # Vivid Royal Blue
         "Sophisticated C": "#0094C8",  # Bright Cyan-Blue
         "Sophisticated D": "#00B894",  # Vibrant Teal-Green
-        "Sophisticated E": "#F4A261",  # Warm Orange
     }
 
     agent_types = sorted(df["Agent Type"].unique())
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
+        # Use a default gray color if an unexpected agent type is encountered.
         ax.plot(
             agent_type_df["Step"],
             agent_type_df["Capital_mean"],
@@ -460,6 +494,8 @@ def calculate_percent_change(df: pd.DataFrame) -> dict:
     percent_changes = {}
 
     df = aggregate_data_with_std(df)
+    # Ensure rows are ordered chronologically within each agent type so the
+    # first and last entries correspond to the start and end of the horizon.
     df = df.sort_values(by=["Agent Type", "Step"])
 
     for agent_type in df["Agent Type"].unique():
@@ -479,6 +515,7 @@ def normalize_percent_change(df: pd.DataFrame) -> dict:
     normalized_values = {}
 
     df = aggregate_data_with_std(df)
+    # Ensure chronological ordering for accurate growth calculations.
     df = df.sort_values(by=["Agent Type", "Step"])
 
     for agent_type in df["Agent Type"].unique():
@@ -510,7 +547,7 @@ def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
 
-    # Create a new column to group time steps into intervals so we don't get warnings and undefined behavior
+    # Group time steps into ``step_interval``-sized bins for averaging.
     data.loc[:, 'Step Interval'] = (data['Step'] // step_interval) * step_interval
 
     # Aggregate data by averaging over simulations and the specified step intervals
@@ -567,7 +604,7 @@ def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
 
-    # Create a new column to group time steps into intervals
+    # Group time steps into ``step_interval``-sized bins for averaging.
     data.loc[:, 'Step Interval'] = (data['Step'] // step_interval) * step_interval
 
     # Aggregate data by averaging over simulations and the specified step intervals
@@ -622,7 +659,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
 
-    # Create a new column to group time steps into intervals so we don't get warnings and undefined behavior
+    # Group time steps into ``step_interval``-sized bins for averaging.
     data.loc[:, 'Step Interval'] = (data['Step'] // step_interval) * step_interval
 
     # Aggregate data by averaging over simulations and the specified step intervals
@@ -675,7 +712,7 @@ def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
 
-    # Create a new column to group time steps into intervals
+    # Group time steps into ``step_interval``-sized bins for averaging.
     data.loc[:, 'Step Interval'] = (data['Step'] // step_interval) * step_interval
 
     # Aggregate data by averaging over simulations and the specified step intervals
