@@ -46,15 +46,18 @@ def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
     -------
     pd.DataFrame
         Dataframe with the ``Agent Type`` values replaced with
-        ``AI``, ``Naive`` or ``Sophisticated``.
+        ``AI``, ``Naive`` or ``Sophisticated``. Both the verbose names
+        (e.g. ``HighestOverlap``) and abbreviated forms like ``1S`` are
+        recognised.
     """
     agent_types = set(df["Agent Type"].tolist())
     for agent in agent_types:
-        # The agent type string encodes the strategy. Use simple pattern
-        # matching to map verbose names onto concise labels used in plots.
-        sophisticated = re.search(r"HighestOverlap", agent)
-        naive = re.search(r"All", agent)
-        ai = re.search(r"StableBaselines3", agent)
+        # The agent type string encodes the strategy. Use pattern
+        # matching to map both verbose and abbreviated names onto concise
+        # labels used in plots.
+        sophisticated = re.search(r"HighestOverlap", agent) or re.fullmatch(r"\d+S", agent)
+        naive = re.search(r"All", agent) or re.fullmatch(r"\d+N", agent)
+        ai = re.search(r"StableBaselines3", agent) or re.fullmatch(r"\d+AI", agent)
 
         if sophisticated:
             df.replace({"Agent Type": agent}, "Sophisticated", inplace=True)
@@ -78,7 +81,8 @@ def sort_by_agent_type_special_edition(df: pd.DataFrame) -> pd.DataFrame:
     -------
     pd.DataFrame
         Dataframe with agent types replaced by ``AI``, ``Naive`` and
-        ``Sophisticated A-D``.
+        ``Sophisticated A-D``. Supports both verbose and abbreviated
+        agent identifiers (e.g. ``HighestOverlap`` or ``1S``).
     """
     agent_types = set(df["Agent Type"].tolist())
     sophisticated_suffixes = ["A", "B", "C", "D"]
@@ -86,9 +90,9 @@ def sort_by_agent_type_special_edition(df: pd.DataFrame) -> pd.DataFrame:
     for agent in agent_types:
         # Similar pattern matching to ``sort_by_agent_type`` but we assign
         # sequential suffixes to distinguish the sophisticated variants.
-        sophisticated = re.search(r"HighestOverlap", agent)
-        naive = re.search(r"All", agent)
-        ai = re.search(r"StableBaselines3", agent)
+        sophisticated = re.search(r"HighestOverlap", agent) or re.fullmatch(r"\d+S", agent)
+        naive = re.search(r"All", agent) or re.fullmatch(r"\d+N", agent)
+        ai = re.search(r"StableBaselines3", agent) or re.fullmatch(r"\d+AI", agent)
 
         if sophisticated:
             df.replace(
