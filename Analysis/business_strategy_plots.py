@@ -778,14 +778,15 @@ def main() -> None:
     # Generate core plots
     if args.various_sophisticated_agent_types:
         _fig1 = avg_bankruptcy_various_sophisticated_agent_types(df, clear_previous=True)
-        # _fig2 = plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
+        _fig2 = plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
     else:
         _fig1 = avg_bankruptcy(df, clear_previous=True)
         _fig2 = plot_cumulative_capital(df, clear_previous=False)
 
+    _fig3 = performance_summary_std_error(df, clear_previous=False)
+
     # Show all open figures at once (prevents later plots from closing earlier ones)
     plt.show()
-    # performance_summary_std_error(df).show()
 
 
     # Print summary statistics
