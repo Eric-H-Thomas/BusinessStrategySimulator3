@@ -69,7 +69,7 @@ def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def sort_by_agent_type_special_edition(df: pd.DataFrame) -> pd.DataFrame:
+def sort_by_agent_type_various_sophisticated_agent_types(df: pd.DataFrame) -> pd.DataFrame:
     """Map verbose agent type names to simplified categories with suffixes.
 
     Parameters
@@ -144,7 +144,7 @@ def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
     return fig
 
 
-def avg_bankruptcy_special_edition(
+def avg_bankruptcy_various_sophisticated_agent_types(
     df: pd.DataFrame, clear_previous: bool = True
 ) -> plt.Figure:
     """Plot bankruptcy frequency with additional Sophisticated sub-types."""
@@ -443,7 +443,7 @@ def plot_cumulative_capital(
     return fig
 
 
-def plot_cumulative_capital_special_edition(
+def plot_cumulative_capital_various_sophisticated_agent_types(
     df: pd.DataFrame, clear_previous: bool = True
 ) -> plt.Figure:
     """Special edition of cumulative capital plot with more Sophisticated types."""
@@ -759,23 +759,34 @@ def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
 def main() -> None:
     """Run plotting utilities using command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Business strategy plotting utilities"
-    )
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Business strategy plotting utilities")
+    parser.add_argument("--zip-path", type=Path, required=True, help="Path to the ZIP file containing the output data")
+    parser.add_argument("--master-output-file-name", required=True, help="Name of master output CSV file inside the ZIP")
     parser.add_argument(
-        "zip_path", type=Path, help="Path to the ZIP file containing simulation output"
+        "--various-sophisticated-agent-types",
+        action="store_true",
+        help="Use this flag if the data contain multiple sophisticated agent types."
     )
-    parser.add_argument("csv_name", help="Name of the CSV file within the ZIP archive")
     args = parser.parse_args()
 
-    df = load_data(args.zip_path, args.csv_name)
-    df = sort_by_agent_type_special_edition(df)
+    # Read in the master output CSV
+    df = load_data(args.zip_path, args.master_output_file_name)
+    df = sort_by_agent_type_various_sophisticated_agent_types(df) if args.various_sophisticated_agent_types else sort_by_agent_type(df)
 
     # Generate core plots
-    avg_bankruptcy_special_edition(df).show()
-    performance_summary_std_error(df).show()
-    plot_cumulative_capital(df).show()
-    plot_cumulative_capital_special_edition(df).show()
+    if args.various_sophisticated_agent_types:
+        _fig1 = avg_bankruptcy_various_sophisticated_agent_types(df, clear_previous=True)
+        # _fig2 = plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
+    else:
+        _fig1 = avg_bankruptcy(df, clear_previous=True)
+        _fig2 = plot_cumulative_capital(df, clear_previous=False)
+
+    # Show all open figures at once (prevents later plots from closing earlier ones)
+    plt.show()
+    # performance_summary_std_error(df).show()
+
 
     # Print summary statistics
     percent_changes = calculate_percent_change(df)
@@ -793,6 +804,7 @@ def main() -> None:
     # plot_market_agent_type_heatmap(output, step_interval=5)
     # plot_firm_market_heatmap(output, step_interval=5)
     # plot_market_firm_heatmap(output, step_interval=5)
+
 if __name__ == "__main__":
     main()
 
