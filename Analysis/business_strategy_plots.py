@@ -147,7 +147,7 @@ def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
 def avg_bankruptcy_various_sophisticated_agent_types(
     df: pd.DataFrame, clear_previous: bool = True
 ) -> plt.Figure:
-    """Plot bankruptcy frequency with additional Sophisticated sub-types."""
+    """Plot bankruptcy frequency with additional Sophisticated subtypes."""
     if clear_previous:
         plt.close("all")
 
@@ -363,7 +363,7 @@ def performance_summary_std_error(
             # this value for every step.
             ax.fill_between(
                 agent_type_df["Step"],
-                (mean_values - (std_values / np.sqrt(agent_type_df["Count"]))).clip(lower=0),
+                np.clip(mean_values - (std_values / np.sqrt(agent_type_df["Count"])), 0, None),
                 mean_values + (std_values / np.sqrt(agent_type_df["Count"])),
                 color=type_to_color[agent_type],
                 alpha=0.2,
@@ -578,7 +578,7 @@ def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     unique_agent_types = agent_types.drop_duplicates()
 
     # Find where each new agent type starts and draw thicker lines there
-    agent_type_changes = [agent_types.tolist().index(atype) for atype in unique_agent_types[1:]]
+    agent_type_changes = [agent_types.tolist().index(a_type) for a_type in unique_agent_types[1:]]
     for line_pos in agent_type_changes:
         ax.axhline(line_pos, color='black', linewidth=1.5)
 

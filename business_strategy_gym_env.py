@@ -161,9 +161,9 @@ class BusinessStrategyEnv(gym.Env):
 
 def make_env(config_path, seed: int, normalize_observations: bool = False) -> Callable[[], BusinessStrategyEnv]:
     def _init():
-        env = BusinessStrategyEnv(str(config_path), normalize_observations=normalize_observations)
-        env.reset(seed=seed)
-        return env
+        _env = BusinessStrategyEnv(str(config_path), normalize_observations=normalize_observations)
+        _env.reset(seed=seed)
+        return _env
 
     return _init
 
@@ -251,9 +251,9 @@ if __name__ == "__main__":
 
     # These statistics are only necessary if comparing rewards at eval time. Since we are just running agents through
     # simulations and plotting results (agnostic to however rewards were calculated during training), we don't need
-    # to do anything with these stats. But we still save them in case we decide to use them in the future.
-    if args.normalize_reward:
-        # Save the running mean/var so you can recreate the same normalization at eval time
-        env.save(args.output.parent / "vecnormalize.pkl")
+    # to do anything with these stats. But we still save this code in case we decide to use them in the future.
+    # if args.normalize_reward:
+    #     # Save the running mean/var so you can recreate the same normalization at eval time
+    #     env.save(args.output.parent / "vecnormalize.pkl")
 
     env.close()
