@@ -194,7 +194,7 @@ if __name__ == "__main__":
         "--num_updates", type=int, default=500, help="Number of PPO update iterations."
     )
     parser.add_argument(
-        "--n-envs", type=int, default=10, help="Number of parallel environments."
+        "--num_envs", type=int, default=10, help="Number of parallel environments."
     )
     parser.add_argument(
         "--use_gpu",
@@ -223,10 +223,10 @@ if __name__ == "__main__":
     )
 
     n_steps = 2048  # StableBaselines3 default value
-    total_steps = n_steps * args.n_envs * args.num_updates
+    total_steps = n_steps * args.num_envs * args.num_updates
 
     # Build vectorized envs
-    env_fns = [make_env(args.config, i, normalize_observations=args.normalize_obs) for i in range(args.n_envs)]
+    env_fns = [make_env(args.config, i, normalize_observations=args.normalize_obs) for i in range(args.num_envs)]
     env = SubprocVecEnv(env_fns)
 
     # Wrap with VecNormalize ONLY for reward normalization (avoid double obs normalization)

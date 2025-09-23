@@ -1,6 +1,6 @@
 {
   "simulation_parameters": {
-    "results_dir":"/Users/eric/Desktop/StrategyResearch/OutputFiles",
+    "results_dir":"/home/eht23/research/business_strategy/OutputFiles",
     "num_sims": 1000,
     "macro_steps_per_sim": 100,
     "skipped_turns_per_regular_turn": 1,
@@ -59,7 +59,7 @@
       "agent_id": 4,
       "agent_type": "stable_baselines_3",
       "production_policy": "Cournot",
-      "path_to_agent": "/Users/eric/CLionProjects/BusinessStrategySimulator3/AgentFiles/Agent.zip",
+      "path_to_agent": "/home/eht23/research/business_strategy/AgentFiles/Agent.zip",
       "RL_Algorithm": "PPO"
     }
   ],

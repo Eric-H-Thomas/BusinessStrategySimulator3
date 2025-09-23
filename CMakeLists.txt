@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.28)
 project(BusinessStrategySimulator3)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_subdirectory(external/pybind11)
-include_directories(external/pybind11/include)
+add_subdirectory(External/pybind11)
+include_directories(External/pybind11/include)
 
 # List all the source files used by both the executable and the Pybind11 module
 set(COMMON_SOURCES
