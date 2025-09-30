@@ -65,9 +65,38 @@ python business_strategy_gym_env.py \
     --config /path/to/BusinessStrategySimulator3/WorkingFiles/Config/default.json \
     --output /path/to/BusinessStrategySimulator3/AgentFiles/Agent.zip \
     --num_updates 3 \
-    --n-envs 5 \
+    --num_envs 5 \
     --use_gpu
 ```
+
+### Submitting a SLURM training job
+
+For recurring experiments on a SLURM-managed cluster, use the helper script in
+`scripts/submit_slurm_training_job.sh`. The script generates an `sbatch` file,
+fills in the required environment setup (virtual environment activation and
+`PYTHONPATH` adjustments), and optionally submits it immediately. Run the
+script from the repository root:
+
+```
+scripts/submit_slurm_training_job.sh \
+    --partition compute \
+    --account your-allocation \
+    --gres gpu:1 \
+    --time 06:00:00 \
+    --output /path/to/output/Agent.zip
+```
+
+Key flags mirror the options of `business_strategy_gym_env.py` and SLURM. Use
+`--dry-run` to generate the batch script without submitting it, or append
+additional training arguments after `--`, for example to change the number of
+updates:
+
+```
+scripts/submit_slurm_training_job.sh --dry-run -- --num_updates 1000
+```
+
+The generated scripts are stored in `WorkingFiles/SlurmJobs/` by default so you
+can re-submit or audit past experiments.
 
 ## Using a trained model
 
