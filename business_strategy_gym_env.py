@@ -213,6 +213,61 @@ if __name__ == "__main__":
         action="store_false",
         help="Normalize rewards using VecNormalize (recommended).",
     )
+    parser.add_argument(
+        "--learning-rate",
+        dest="learning_rate",
+        type=float,
+        default=3e-4,
+        help="Learning rate passed to PPO.",
+    )
+    parser.add_argument(
+        "--gamma",
+        type=float,
+        default=0.999,
+        help="Discount factor for future rewards.",
+    )
+    parser.add_argument(
+        "--gae-lambda",
+        dest="gae_lambda",
+        type=float,
+        default=0.95,
+        help="Generalized Advantage Estimation lambda parameter.",
+    )
+    parser.add_argument(
+        "--clip-range",
+        dest="clip_range",
+        type=float,
+        default=0.2,
+        help="Clipping range for the policy objective.",
+    )
+    parser.add_argument(
+        "--ent-coef",
+        dest="ent_coef",
+        type=float,
+        default=0.0,
+        help="Entropy bonus coefficient.",
+    )
+    parser.add_argument(
+        "--vf-coef",
+        dest="vf_coef",
+        type=float,
+        default=0.5,
+        help="Value function loss coefficient.",
+    )
+    parser.add_argument(
+        "--n-steps",
+        dest="n_steps",
+        type=int,
+        default=2048,
+        help="Number of environment steps to run per update.",
+    )
+    parser.add_argument(
+        "--batch-size",
+        dest="batch_size",
+        type=int,
+        default=64,
+        help="Mini-batch size used during PPO updates.",
+    )
 
     args = parser.parse_args()
 
@@ -222,8 +277,7 @@ if __name__ == "__main__":
         else "cpu"
     )
 
-    n_steps = 2048  # StableBaselines3 default value
-    total_steps = n_steps * args.num_envs * args.num_updates
+    total_steps = args.n_steps * args.num_envs * args.num_updates
 
     # Build vectorized envs
     env_fns = [make_env(args.config, i, normalize_observations=args.normalize_obs) for i in range(args.num_envs)]
@@ -237,8 +291,14 @@ if __name__ == "__main__":
     model = stable_baselines3.PPO(
         "MlpPolicy",
         env,
-        gamma=0.999,
-        learning_rate=0.0003, # Default is 0.0003
+        gamma=args.gamma,
+        learning_rate=args.learning_rate, # Default is 0.0003
+        gae_lambda=args.gae_lambda,
+        clip_range=args.clip_range,
+        ent_coef=args.ent_coef,
+        vf_coef=args.vf_coef,
+        n_steps=args.n_steps,
+        batch_size=args.batch_size,
         device=device,
         verbose=1,
     )
