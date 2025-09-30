@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
+
+# Exit immediately on error, treat unset variables as errors, and ensure that
+# failures within pipelines are detected. These safeguards keep the script
+# predictable when running on remote compute clusters.
 set -euo pipefail
 
+# Print usage information describing the command line interface for the
+# submission helper. The block of text below is emitted exactly as written.
 show_help() {
     cat <<'USAGE'
 Usage: submit_slurm_training_job.sh [options] [-- extra_training_args]
@@ -36,8 +42,14 @@ Anything after "--" is forwarded verbatim to business_strategy_gym_env.py.
 USAGE
 }
 
+# Determine the absolute path to the repository root so that relative paths in
+# the script continue to work even if the script is invoked from a different
+# directory.
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
+# Default values for simulator configuration, training run behaviour, and
+# SLURM-specific submission parameters. These values can be overridden via
+# command line options.
 CONFIG="WorkingFiles/Config/default.json"
 OUTPUT="AgentFiles/Agent.zip"
 NUM_UPDATES=500
@@ -61,6 +73,9 @@ EXTRA_SBATCH=()
 DRY_RUN=0
 EXTRA_TRAIN_ARGS=()
 
+# Helper used to process "--long" options that may appear without short
+# aliases. It accepts the option name and associated value, updating the
+# corresponding configuration variable.
 parse_long_opt() {
     local opt="$1"
     local value="$2"
@@ -92,6 +107,8 @@ parse_long_opt() {
     esac
 }
 
+# Main argument parsing loop. It consumes the provided CLI options, updating
+# script configuration or capturing additional training arguments after "--".
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -c|--config) CONFIG="$2"; shift 2 ;;
@@ -145,6 +162,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Convert a possibly relative path into an absolute one using the repository
+# root as the base. Empty strings are returned untouched to allow optional
+# parameters.
 make_absolute() {
     local path="$1"
     if [[ -z "$path" ]]; then
@@ -156,6 +176,8 @@ make_absolute() {
     fi
 }
 
+# Normalize key paths that will be used later so that any relative input works
+# regardless of the caller's current working directory.
 CONFIG=$(make_absolute "$CONFIG")
 OUTPUT=$(make_absolute "$OUTPUT")
 BUILD_DIR=$(make_absolute "$BUILD_DIR")
@@ -163,13 +185,20 @@ if [[ -n "$VENV_PATH" ]]; then
     VENV_PATH=$(make_absolute "$VENV_PATH")
 fi
 
+# Ensure that the required simulator configuration exists before writing or
+# submitting a job.
 if [[ ! -f "$CONFIG" ]]; then
     echo "Configuration file not found: $CONFIG" >&2
     exit 1
 fi
 
+# Make sure the output directory is present so the training process can store
+# the resulting agent checkpoint without encountering directory errors.
 mkdir -p "$(dirname "$OUTPUT")"
 
+# Warn the user about missing optional resources (build directory and virtual
+# environment) so they can adjust the configuration prior to submitting the
+# SLURM job.
 if [[ -n "$BUILD_DIR" && ! -d "$BUILD_DIR" ]]; then
     echo "Warning: build directory '$BUILD_DIR' does not exist." >&2
 fi
@@ -178,6 +207,8 @@ if [[ -n "$VENV_PATH" && ! -f "$VENV_PATH/bin/activate" ]]; then
     echo "Warning: virtual environment not found at '$VENV_PATH'." >&2
 fi
 
+# If no custom job script path was provided, construct a timestamped location
+# under WorkingFiles/SlurmJobs to keep generated sbatch files organized.
 if [[ -z "$JOB_SCRIPT" ]]; then
     timestamp=$(date +%Y%m%d_%H%M%S)
     JOB_SCRIPT="$REPO_ROOT/WorkingFiles/SlurmJobs/train_agent_${timestamp}.sbatch"
@@ -185,6 +216,9 @@ fi
 
 mkdir -p "$(dirname "$JOB_SCRIPT")"
 
+# Generate the sbatch job file, line-by-line, using printf to avoid issues with
+# shell expansion. The script includes resource directives, optional modules
+# and environment setup, and finally the training invocation itself.
 {
     printf '#!/bin/bash\n'
     printf '#SBATCH --job-name=%s\n' "$JOB_NAME"
@@ -210,15 +244,21 @@ mkdir -p "$(dirname "$JOB_SCRIPT")"
     for extra in "${EXTRA_SBATCH[@]}"; do
         printf '#SBATCH %s\n' "$extra"
     done
+# Reapply strict shell safety options inside the job script since it runs as a
+# separate bash process on the cluster.
     printf '\nset -euo pipefail\n'
     printf 'cd %q\n' "$REPO_ROOT"
     for module_cmd in "${MODULE_CMDS[@]}"; do
         printf '%s\n' "$module_cmd"
     done
     if [[ -n "$VENV_PATH" ]]; then
+# Activate the desired virtual environment, if provided, so that Python runs
+# with the expected dependencies installed.
         printf 'source %q\n' "$VENV_PATH/bin/activate"
     fi
     if [[ -n "$BUILD_DIR" ]]; then
+        # When a build directory is provided, append it to PYTHONPATH so Python
+        # can import compiled simulator components during training.
         printf 'export PYTHONPATH=%q:${PYTHONPATH:-}\n' "$BUILD_DIR"
     fi
     printf '\n'
@@ -232,15 +272,22 @@ mkdir -p "$(dirname "$JOB_SCRIPT")"
     printf '\n'
 } > "$JOB_SCRIPT"
 
+# Make the generated job script executable to allow manual inspection and
+# execution if desired.
 chmod 700 "$JOB_SCRIPT"
 
+# Let the user know where the sbatch file lives for debugging or manual reuse.
 echo "SLURM script generated at $JOB_SCRIPT"
 
+# Respect the --dry-run flag by exiting after generating the sbatch file and
+# avoiding any submission attempts.
 if [[ $DRY_RUN -eq 1 ]]; then
     echo "Dry run enabled; not submitting job."
     exit 0
 fi
 
+# If sbatch is unavailable (e.g., running locally), inform the user but still
+# exit successfully after generating the script so it can be submitted later.
 if ! command -v sbatch >/dev/null 2>&1; then
     echo "sbatch command not found. Submit the script manually when on the cluster." >&2
     exit 0
