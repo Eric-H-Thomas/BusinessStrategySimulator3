@@ -98,6 +98,26 @@ scripts/submit_slurm_training_job.sh --dry-run -- --num_updates 1000
 The generated scripts are stored in `WorkingFiles/SlurmJobs/` by default so you
 can re-submit or audit past experiments.
 
+## Hyperparameter sweeps
+
+Use `scripts/run_ppo_hyperparameter_sweep.py` to launch a grid search over PPO
+settings and automatically evaluate each trained agent. The script mirrors the
+single-job training options and stores every run's model, metrics, and
+TensorBoard logs under `WorkingFiles/Sweeps/ppo` by default.
+
+```bash
+python scripts/run_ppo_hyperparameter_sweep.py \
+    --config WorkingFiles/Config/default.json \
+    --num-envs 8 \
+    --num-updates 400 \
+    --eval-episodes 20 \
+    --max-runs 10
+```
+
+Adjust `--max-runs` to limit how many hyperparameter combinations are tested.
+Aggregated results are written to `results.csv` and `results.json` in the sweep
+output directory.
+
 ## Using a trained model
 
 The `simulator.py` helper loads a saved model and returns an action for a given observation:
