@@ -100,23 +100,25 @@ can re-submit or audit past experiments.
 
 ## Hyperparameter sweeps
 
-Use `scripts/run_ppo_hyperparameter_sweep.py` to launch a grid search over PPO
-settings and automatically evaluate each trained agent. The script mirrors the
-single-job training options and stores every run's model, metrics, and
-TensorBoard logs under `WorkingFiles/Sweeps/ppo` by default.
+Use `scripts/submit_slurm_ppo_sweep.py` to launch a grid search over PPO
+settings, with each configuration submitted as its own SLURM job. The helper
+mirrors the single-job training options and stores every run's model, metrics,
+and metadata under `WorkingFiles/Sweeps/ppo_slurm` by default.
 
 ```bash
-python scripts/run_ppo_hyperparameter_sweep.py \
+python scripts/submit_slurm_ppo_sweep.py \
     --config WorkingFiles/Config/default.json \
     --num-envs 8 \
     --num-updates 400 \
-    --eval-episodes 20 \
+    --partition compute \
+    --gres gpu:1 \
     --max-runs 10
 ```
 
-Adjust `--max-runs` to limit how many hyperparameter combinations are tested.
-Aggregated results are written to `results.csv` and `results.json` in the sweep
-output directory.
+Add any additional `sbatch` parameters directly via the script flags (for
+example `--time 04:00:00` or `--account your-allocation`). Use `--dry-run` to
+generate the job scripts without submitting them; the commands printed to the
+terminal show exactly what will be executed.
 
 ## Using a trained model
 
