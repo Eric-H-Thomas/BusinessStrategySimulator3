@@ -1,0 +1,51 @@
+Temporary PPO Sweep Sanity Check
+================================
+
+1. Activate the desired Python environment (if applicable).
+
+   ```bash
+   source ~/.venvs/bss/bin/activate  # adjust to your environment
+   ```
+
+2. Navigate to the repository root.
+
+   ```bash
+   cd /workspace/BusinessStrategySimulator3
+   ```
+
+3. (Optional) Clear out any previous temporary sweep artifacts so the run produces
+   fresh output directories.
+
+   ```bash
+   rm -rf WorkingFiles/Sweeps/ppo_slurm/*
+   ```
+
+4. Perform a dry run to confirm the SBATCH commands are generated correctly without
+   submitting any jobs. Limit the run count to keep the check quick.
+
+   ```bash
+   python scripts/submit_slurm_ppo_sweep.py --dry-run --max-runs 2
+   ```
+
+5. Inspect the generated job scripts (if any) and the printed commands to verify the
+   hyperparameters and rollout settings match the temporary mini grid.
+
+6. When ready to exercise the full workflow once, submit the truncated sweep for
+   real (still limited to two runs).
+
+   ```bash
+   python scripts/submit_slurm_ppo_sweep.py --max-runs 2
+   ```
+
+7. Confirm that the run directories and metadata were created as expected.
+
+   ```bash
+   ls WorkingFiles/Sweeps/ppo_slurm
+   cat WorkingFiles/Sweeps/ppo_slurm/run_000/hyperparameters.json
+   ```
+
+8. After verifying the setup, delete this checklist.
+
+   ```bash
+   rm TEMP_SWEEP_CHECKLIST.txt
+   ```
