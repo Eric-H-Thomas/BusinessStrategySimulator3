@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import itertools
 import json
 import shlex
@@ -25,13 +26,14 @@ def build_submit_command(
     job_name: str,
     output_path: Path,
     combo: Dict[str, object],
+    config_path: Path,
 ) -> List[str]:
     """Create the command used to submit a SLURM job for a single configuration."""
 
     cmd: List[str] = [
         str(submit_script),
         "--config",
-        str(args.config),
+        str(config_path),
         "--output",
         str(output_path),
         "--num-updates",
@@ -201,6 +203,7 @@ def main() -> None:
         raise FileNotFoundError(f"Submission helper not found: {args.submit_script}")
 
     paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256), (2048, 512)]
+    base_config = json.loads(args.config.read_text())
     hyperparameter_space: Dict[str, Sequence[object]] = {
         "learning_rate": [1e-4, 3e-4, 1e-3],
         "gamma": [0.99, 0.995, 0.999],
@@ -229,6 +232,18 @@ def main() -> None:
             metadata_path.write_text(json.dumps(combo, indent=2))
 
             output_path = combo_dir / "Agent.zip"
+            run_results_dir = (combo_dir / "simulation_output").resolve()
+            run_results_dir.mkdir(parents=True, exist_ok=True)
+
+            combo_config = copy.deepcopy(base_config)
+            sim_params = combo_config.setdefault("simulation_parameters", {})
+            sim_params["results_dir"] = str(run_results_dir)
+            for agent in combo_config.get("ai_agents", []):
+                agent["path_to_agent"] = str(output_path.resolve())
+
+            combo_config_path = combo_dir / "config.json"
+            combo_config_path.write_text(json.dumps(combo_config, indent=2))
+
             job_name = f"{args.job_name_prefix}-{run_id:03d}"
 
             cmd = build_submit_command(
@@ -237,6 +252,7 @@ def main() -> None:
                 job_name,
                 output_path,
                 combo,
+                combo_config_path,
             )
 
             quoted = " ".join(shlex.quote(part) for part in cmd)

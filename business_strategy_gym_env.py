@@ -1,3 +1,4 @@
+import json
 import simulator_module
 import gymnasium as gym
 import numpy as np
@@ -175,6 +176,8 @@ if __name__ == "__main__":
     import stable_baselines3
     from stable_baselines3.common.vec_env import SubprocVecEnv
     from stable_baselines3.common.vec_env import VecNormalize  # NEW: for reward normalization
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    from stable_baselines3.common.evaluation import evaluate_policy
 
     parser = argparse.ArgumentParser(description="Train a PPO agent in the BusinessStrategyEnv.")
     base_dir = Path(__file__).resolve().parent
@@ -268,6 +271,13 @@ if __name__ == "__main__":
         default=64,
         help="Mini-batch size used during PPO updates.",
     )
+    parser.add_argument(
+        "--eval-episodes",
+        dest="eval_episodes",
+        type=int,
+        default=5,
+        help="Number of evaluation episodes to run after training completes (0 to disable).",
+    )
 
     args = parser.parse_args()
 
@@ -315,5 +325,47 @@ if __name__ == "__main__":
     # if args.normalize_reward:
     #     # Save the running mean/var so you can recreate the same normalization at eval time
     #     env.save(args.output.parent / "vecnormalize.pkl")
+
+    if args.eval_episodes > 0:
+        eval_env = DummyVecEnv(
+            [
+                make_env(
+                    args.config,
+                    seed=args.num_envs + 12345 + i,
+                    normalize_observations=args.normalize_obs,
+                )
+                for i in range(1)
+            ]
+        )
+        try:
+            episode_rewards, episode_lengths = evaluate_policy(
+                model,
+                eval_env,
+                n_eval_episodes=args.eval_episodes,
+                deterministic=True,
+                return_episode_rewards=True,
+            )
+        finally:
+            eval_env.close()
+
+        rewards = [float(r) for r in episode_rewards]
+        lengths = [int(l) for l in episode_lengths]
+
+        evaluation_summary = {
+            "num_episodes": len(rewards),
+            "mean_reward": float(np.mean(rewards)) if rewards else 0.0,
+            "std_reward": float(np.std(rewards)) if len(rewards) > 1 else 0.0,
+            "min_reward": float(np.min(rewards)) if rewards else 0.0,
+            "max_reward": float(np.max(rewards)) if rewards else 0.0,
+            "mean_length": float(np.mean(lengths)) if lengths else 0.0,
+            "min_length": int(np.min(lengths)) if lengths else 0,
+            "max_length": int(np.max(lengths)) if lengths else 0,
+        }
+
+        metrics_path = args.output.parent / "evaluation_metrics.json"
+        metrics_path.write_text(json.dumps(evaluation_summary, indent=2))
+        print(f"Saved evaluation metrics to {metrics_path}")
+    else:
+        print("Evaluation skipped because --eval-episodes was set to 0.")
 
     env.close()
