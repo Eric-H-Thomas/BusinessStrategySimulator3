@@ -241,8 +241,7 @@ def main() -> None:
             metadata_path.write_text(json.dumps(combo, indent=2))
 
             output_path = combo_dir / "Agent.zip"
-            run_results_dir = (combo_dir / "simulation_output").resolve()
-            run_results_dir.mkdir(parents=True, exist_ok=True)
+            run_results_dir = combo_dir.resolve()
 
             combo_config = copy.deepcopy(base_config)
             sim_params = combo_config.setdefault("simulation_parameters", {})
