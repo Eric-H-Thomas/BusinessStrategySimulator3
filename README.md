@@ -16,10 +16,15 @@ This simulator models market similarities and lets agents decide when to enter o
    ```
 2. Build the C++ simulator and Python bindings:
    ```
-   cmake -S . -B build
-   cmake --build build
+   cmake --build cmake-build-debug
    ```
    This produces the `simulator_module` Python extension used by the environment.
+
+   Note that if you're on the supercomputer, you might first have to make cmake available via
+   ```
+   module avail cmake (to check the available versions)
+   module load cmake/[version number]
+   ```
 
 ## Training an agent
 
