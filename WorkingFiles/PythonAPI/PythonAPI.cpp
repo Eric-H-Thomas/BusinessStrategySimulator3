@@ -81,10 +81,12 @@ tuple<vector<double>, double, bool, bool> PythonAPI::step_helper() {
 } // End of PythonAPI::step_helper() method
 
 void PythonAPI::close() {
-    // TODO: Add error handling to this function
-    if (simulator.bGenerateMasterOutput) {
-        simulator.masterHistory.generate_master_output();
-    }
+    // Temporarily disabling generation of master output in the Python API because the CSV file gets messed up when
+    // there are multiple threads working on it.
+
+//    if (simulator.bGenerateMasterOutput) {
+//        simulator.masterHistory.generate_master_output();
+//    }
 }
 
 int PythonAPI::get_num_markets() {

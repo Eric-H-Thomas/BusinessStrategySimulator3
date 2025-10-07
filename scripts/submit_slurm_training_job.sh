@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Exit immediately on error, treat unset variables as errors, and ensure that
-# failures within pipelines are detected. These safeguards keep the script
+# Exit immediately on error (-e flag), treat unset variables as errors (-u flag), and ensure that
+# failures within pipelines are detected (-o flag). These safeguards keep the script
 # predictable when running on remote compute clusters.
 set -euo pipefail
 
