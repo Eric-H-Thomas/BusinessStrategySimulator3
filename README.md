@@ -100,25 +100,56 @@ can re-submit or audit past experiments.
 
 ## Hyperparameter sweeps
 
-Use `scripts/submit_slurm_ppo_sweep.py` to launch a grid search over PPO
-settings, with each configuration submitted as its own SLURM job. The helper
-mirrors the single-job training options and stores every run's model, metrics,
-and metadata under `WorkingFiles/Sweeps/ppo_slurm` by default.
+`scripts/submit_slurm_ppo_sweep.py` automates PPO sweeps by generating one
+SLURM job per hyperparameter combination. The script wraps
+`scripts/submit_slurm_training_job.sh`, so make sure you can launch a single
+training job before scheduling a sweep.
 
-```bash
-python scripts/submit_slurm_ppo_sweep.py \
-    --config WorkingFiles/Config/default.json \
-    --num-envs 8 \
-    --num-updates 400 \
-    --partition compute \
-    --gres gpu:1 \
-    --max-runs 10
-```
+### Step-by-step workflow
 
-Add any additional `sbatch` parameters directly via the script flags (for
-example `--time 04:00:00` or `--account your-allocation`). Use `--dry-run` to
-generate the job scripts without submitting them; the commands printed to the
-terminal show exactly what will be executed.
+1. **Inspect (and optionally edit) the search space.** The sweep script defines
+   two rollout settings in `paired_rollout_settings` and the remaining PPO
+   hyperparameters in `hyperparameter_space`. Edit those lists if you want to
+   expand or shrink the grid, or comment out entries while testing. You can also
+   narrow the run count with `--max-runs` to sample the first *n* combinations
+   without editing the file.
+2. **Choose the simulator configuration.** By default the script copies the
+   JSON in `WorkingFiles/Config/default.json`, injects the `results_dir` for each
+   run, and rewrites any agent checkpoints to point at the sweep output
+   directory. Pass a different file with `--config` if your experiment requires
+   a custom scenario.
+3. **Decide where results should live.** Each run gets its own folder inside the
+   directory supplied by `--output-dir` (default:
+   `WorkingFiles/Sweeps/ppo_slurm`). That folder will contain:
+   - `hyperparameters.json`: the exact PPO settings for that job.
+   - `config.json`: the generated simulator config handed to the training job.
+   - `Agent.zip`: the trained model checkpoint saved by Stable-Baselines3.
+   - `simulation_output/`: simulator-level CSV logs written during evaluation.
+4. **Launch the sweep.** Provide whatever SLURM options you normally use when
+   calling the single-job helper. The example below requests a GPU partition but
+   otherwise relies on defaults:
+
+   ```bash
+   python scripts/submit_slurm_ppo_sweep.py \
+       --config WorkingFiles/Config/default.json \
+       --num-envs 8 \
+       --num-updates 400 \
+       --partition compute \
+       --gres gpu:1 \
+       --max-runs 10
+   ```
+
+5. **Monitor submissions.** The script prints the fully expanded command for
+   each run and then invokes the SLURM helper. Use `--dry-run` to generate the
+   sbatch scripts without submitting, or pass additional scheduler settings via
+   dedicated flags such as `--time 04:00:00`, `--account`, `--qos`, or repeated
+   `--extra-sbatch "#SBATCH --constraint=..."` options.
+
+If you need per-run environment customization (e.g., pointing to a different
+virtual environment or simulator build), forward the corresponding flags
+(`--venv`, `--build-dir`, `--use-gpu`, etc.) exactly as you would when calling
+`submit_slurm_training_job.sh` directly. The sweep script forwards those values
+to every scheduled job.
 
 ## Using a trained model
 
