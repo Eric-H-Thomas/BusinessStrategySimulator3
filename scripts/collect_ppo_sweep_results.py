@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -61,6 +62,36 @@ def write_csv(rows: List[Dict[str, Any]], output_path: Path) -> None:
 
 
 
+def cleanup_slurm_jobs(slurm_jobs_dir: Path) -> None:
+    """Remove generated SLURM job scripts so future sweeps start clean."""
+
+    if not slurm_jobs_dir.exists():
+        print(f"No SLURM job directory found at {slurm_jobs_dir}; skipping cleanup.")
+        return
+
+    removed_entries = 0
+    for entry in slurm_jobs_dir.iterdir():
+        try:
+            if entry.is_dir():
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
+            removed_entries += 1
+        except OSError as exc:
+            print(f"Warning: failed to remove {entry}: {exc}")
+
+    try:
+        slurm_jobs_dir.rmdir()
+    except OSError:
+        # Directory may still contain files we could not delete; leave it in place.
+        pass
+
+    if removed_entries:
+        print(f"Cleared {removed_entries} item(s) from {slurm_jobs_dir}.")
+    else:
+        print(f"SLURM job directory {slurm_jobs_dir} was already empty.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Combine PPO sweep hyperparameters and evaluation metrics into a CSV table.",
@@ -75,6 +106,17 @@ def main() -> None:
         "--output",
         type=Path,
         help="Where to write the aggregated CSV (default: <input-dir>/summary.csv).",
+    )
+    parser.add_argument(
+        "--slurm-jobs-dir",
+        type=Path,
+        default=Path("WorkingFiles/SlurmJobs"),
+        help="Directory containing generated sbatch files to purge after aggregation.",
+    )
+    parser.add_argument(
+        "--skip-cleanup",
+        action="store_true",
+        help="Do not remove generated SLURM job scripts after summarising results.",
     )
 
     args = parser.parse_args()
@@ -94,6 +136,11 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     write_csv(rows, output_path)
     print(f"Wrote {len(rows)} rows to {output_path}")
+
+    if not args.skip_cleanup:
+        cleanup_slurm_jobs(args.slurm_jobs_dir)
+    else:
+        print("Skipping SLURM job cleanup as requested.")
 
 
 if __name__ == "__main__":
