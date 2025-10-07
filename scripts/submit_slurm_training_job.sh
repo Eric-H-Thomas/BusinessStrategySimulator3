@@ -200,7 +200,13 @@ mkdir -p "$(dirname "$OUTPUT")"
 # environment) so they can adjust the configuration prior to submitting the
 # SLURM job.
 if [[ -n "$BUILD_DIR" && ! -d "$BUILD_DIR" ]]; then
-    echo "Warning: build directory '$BUILD_DIR' does not exist." >&2
+    if [[ "$BUILD_DIR" == "$(make_absolute build)" ]]; then
+        echo "Info: skipping missing default build directory '$BUILD_DIR'." >&2
+        BUILD_DIR=""
+    else
+        echo "Warning: build directory '$BUILD_DIR' does not exist." >&2
+        BUILD_DIR=""
+    fi
 fi
 
 if [[ -n "$VENV_PATH" && ! -f "$VENV_PATH/bin/activate" ]]; then
