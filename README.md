@@ -124,12 +124,12 @@ training job before scheduling a sweep.
    directory. Pass a different file with `--config` if your experiment requires
    a custom scenario.
 3. **Decide where results should live.** Each run gets its own folder inside the
-   directory supplied by `--output-dir` (default:
-   `WorkingFiles/Sweeps/ppo_slurm`). That folder will contain:
+  directory supplied by `--output-dir` (default:
+  `WorkingFiles/Sweeps/ppo_slurm`). That folder will contain:
    - `hyperparameters.json`: the exact PPO settings for that job.
    - `config.json`: the generated simulator config handed to the training job.
    - `Agent.zip`: the trained model checkpoint saved by Stable-Baselines3.
-   - `simulation_output/`: simulator-level CSV logs written during evaluation.
+   - Any simulator outputs written during evaluation (if produced).
 4. **Launch the sweep.** Provide whatever SLURM options you normally use when
    calling the single-job helper. The example below requests a GPU partition but
    otherwise relies on defaults:
