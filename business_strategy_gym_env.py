@@ -5,6 +5,8 @@ import numpy as np
 
 from typing import Callable
 
+from stable_baselines3.common.monitor import Monitor
+
 
 class BusinessStrategyEnv(gym.Env):
     def __init__(self, path_to_config_file, normalize_observations: bool = False):
@@ -163,6 +165,7 @@ class BusinessStrategyEnv(gym.Env):
 def make_env(config_path, seed: int, normalize_observations: bool = False) -> Callable[[], BusinessStrategyEnv]:
     def _init():
         _env = BusinessStrategyEnv(str(config_path), normalize_observations=normalize_observations)
+        _env = Monitor(_env)
         _env.reset(seed=seed)
         return _env
 
