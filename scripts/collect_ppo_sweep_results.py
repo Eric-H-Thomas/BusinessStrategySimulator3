@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -41,6 +42,21 @@ def gather_run_rows(run_dir: Path) -> Optional[Dict[str, Any]]:
     return row
 
 
+def _normalise_value(value: Any) -> Any:
+    """Tweak numeric values so spreadsheet tools treat them as numbers."""
+
+    if isinstance(value, float):
+        if math.isnan(value):
+            return "nan"
+        if math.isinf(value):
+            return "inf" if value > 0 else "-inf"
+
+        # Excel treats floats with long binary tails as text. Rounding curbs this.
+        return round(value, 12)
+
+    return value
+
+
 def write_csv(rows: List[Dict[str, Any]], output_path: Path) -> None:
     if not rows:
         output_path.write_text("")
@@ -58,7 +74,8 @@ def write_csv(rows: List[Dict[str, Any]], output_path: Path) -> None:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
-            writer.writerow(row)
+            normalised_row = {key: _normalise_value(value) for key, value in row.items()}
+            writer.writerow(normalised_row)
 
 
 
