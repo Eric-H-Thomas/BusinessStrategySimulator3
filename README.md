@@ -150,6 +150,19 @@ training job before scheduling a sweep.
    dedicated flags such as `--time 04:00:00`, `--account`, `--qos`, or repeated
    `--extra-sbatch "#SBATCH --constraint=..."` options.
 
+### After the sweep finishes
+
+Aggregate the results once the jobs have completed:
+
+```bash
+python scripts/collect_ppo_sweep_results.py
+```
+
+The collector writes a `summary.csv` inside the sweep directory and, by default,
+cleans out `WorkingFiles/SlurmJobs` so stale `sbatch` scripts do not pile up
+between experiments. Pass `--skip-cleanup` if you want to keep those generated
+job files around for auditing.
+
 If you need per-run environment customization (e.g., pointing to a different
 virtual environment or simulator build), forward the corresponding flags
 (`--venv`, `--build-dir`, `--use-gpu`, etc.) exactly as you would when calling
