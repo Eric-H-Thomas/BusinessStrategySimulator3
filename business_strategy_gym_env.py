@@ -278,7 +278,7 @@ if __name__ == "__main__":
         "--eval-episodes",
         dest="eval_episodes",
         type=int,
-        default=5,
+        default=100,
         help="Number of evaluation episodes to run after training completes (0 to disable).",
     )
 
