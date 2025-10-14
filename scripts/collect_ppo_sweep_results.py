@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -42,8 +43,18 @@ def gather_run_rows(run_dir: Path) -> Optional[Dict[str, Any]]:
     return row
 
 
+_INTEGER_RE = re.compile(r"^[+-]?\d+$")
+_FLOAT_RE = re.compile(
+    r"^[+-]?((\d+\.\d*)|(\d*\.\d+)|\d+)([eE][+-]?\d+)?$"
+)
+
+
 def _normalise_value(value: Any) -> Any:
     """Tweak numeric values so spreadsheet tools treat them as numbers."""
+
+    if isinstance(value, bool):
+        # bool is a subclass of int, but we want to keep True/False values unchanged.
+        return value
 
     if isinstance(value, float):
         if math.isnan(value):
@@ -53,6 +64,31 @@ def _normalise_value(value: Any) -> Any:
 
         # Excel treats floats with long binary tails as text. Rounding curbs this.
         return round(value, 12)
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return value
+
+        if _INTEGER_RE.match(stripped):
+            try:
+                return int(stripped)
+            except ValueError:
+                # Value exceeds Python's int range; leave it as text.
+                return value
+
+        if _FLOAT_RE.match(stripped):
+            try:
+                numeric = float(stripped)
+            except ValueError:
+                return value
+
+            if math.isnan(numeric):
+                return "nan"
+            if math.isinf(numeric):
+                return "inf" if numeric > 0 else "-inf"
+
+            return round(numeric, 12)
 
     return value
 
