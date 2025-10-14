@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Submit a PPO hyperparameter sweep where each configuration runs as a SLURM job."""
+"""Submit a DQN hyperparameter sweep where each configuration runs as a SLURM job."""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ import json
 import shlex
 import subprocess
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Sequence
 
 
 def cartesian_product(space: Dict[str, Sequence[object]]) -> Iterable[Dict[str, object]]:
@@ -92,7 +92,7 @@ def build_submit_command(
 def main() -> None:
     base_dir = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(
-        description="Submit a SLURM job per PPO hyperparameter configuration."
+        description="Submit a SLURM job per DQN hyperparameter configuration.",
     )
     parser.add_argument(
         "--config",
@@ -103,24 +103,24 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=base_dir / "WorkingFiles" / "Sweeps" / "ppo_slurm",
+        default=base_dir / "WorkingFiles" / "Sweeps" / "dqn_slurm",
         help="Directory where run outputs and metadata will be stored.",
     )
     parser.add_argument(
         "--num-envs",
         type=int,
-        default=8,
+        default=1,
         help="Number of parallel environments to request per run.",
     )
     parser.add_argument(
         "--num-updates",
         type=int,
-        default=400,
-        help="Number of PPO updates performed by each job.",
+        default=600,
+        help="Number of training updates performed by each job.",
     )
     parser.add_argument(
         "--job-name-prefix",
-        default="ppo-sweep",
+        default="dqn-sweep",
         help="Prefix used when naming SLURM jobs.",
     )
     parser.add_argument(
@@ -202,33 +202,26 @@ def main() -> None:
     if not args.submit_script.exists():
         raise FileNotFoundError(f"Submission helper not found: {args.submit_script}")
 
-    # paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256), (2048, 512)]
-    paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256)]
     base_config = json.loads(args.config.read_text())
     hyperparameter_space: Dict[str, Sequence[object]] = {
         "learning_rate": [1e-4, 3e-4, 1e-3],
-        "gamma": [0.99, 0.995, 0.999],
-        "gae_lambda": [0.9, 0.95],
-        "clip_range": [0.15, 0.25],
-        "ent_coef": [0.0, 0.01],
-        "vf_coef": [0.5, 1.0],
+        "gamma": [0.98, 0.99, 0.995],
+        "buffer_size": [50000, 100000],
+        "batch_size": [64, 128],
+        "exploration_fraction": [0.1, 0.2],
+        "exploration_final_eps": [0.01, 0.02],
     }
 
-    # TODO: This is a tiny hyperparameter space for testing. Delete when done using.
-    # hyperparameter_space: Dict[str, Sequence[object]] = {
-    #     "learning_rate": [3e-4, 1e-3],
-    #     "gamma": [0.99],
-    #     "gae_lambda": [0.95],
-    #     "clip_range": [0.2],
-    #     "ent_coef": [0.0],
-    #     "vf_coef": [0.5],
-    # }
+    training_schedules: Sequence[Dict[str, int]] = (
+        {"train_freq": 1, "gradient_steps": 1, "target_update_interval": 1000},
+        {"train_freq": 4, "gradient_steps": 2, "target_update_interval": 4000},
+    )
 
     run_counter = 0
 
-    for n_steps, batch_size in paired_rollout_settings:
+    for schedule in training_schedules:
         grid = dict(hyperparameter_space)
-        grid.update({"n_steps": [n_steps], "batch_size": [batch_size]})
+        grid.update({key: [value] for key, value in schedule.items()})
 
         for combo in cartesian_product(grid):
             if args.max_runs is not None and run_counter >= args.max_runs:
@@ -241,7 +234,7 @@ def main() -> None:
             combo_dir.mkdir(parents=True, exist_ok=True)
             metadata_path = combo_dir / "hyperparameters.json"
             metadata = dict(combo)
-            metadata["algorithm"] = "ppo"
+            metadata["algorithm"] = "dqn"
             metadata_path.write_text(json.dumps(metadata, indent=2))
 
             output_path = combo_dir / "Agent.zip"
