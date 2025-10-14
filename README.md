@@ -158,6 +158,100 @@ Aggregate the results once the jobs have completed:
 python scripts/collect_ppo_sweep_results.py
 ```
 
+### DQN sweeps
+
+`scripts/submit_slurm_dqn_sweep.py` mirrors the PPO workflow but targets the
+DQN implementation. It iterates over the cartesian product of the
+`hyperparameter_space` dictionary and the `training_schedules` tuples defined at
+the bottom of the script.
+
+The usage pattern matches the PPO helper:
+
+1. Confirm the search grid aligns with your experiment. Edit
+   `hyperparameter_space` to adjust optimizer and exploration settings, and
+   tweak `training_schedules` if you want different `train_freq`,
+   `gradient_steps`, or `target_update_interval` values.
+2. Provide a simulator configuration and output directory. Each run gets its own
+   folder (`WorkingFiles/Sweeps/dqn_slurm` by default) populated with
+   `hyperparameters.json`, the generated `config.json`, and the resulting
+   `Agent.zip` checkpoint.
+3. Launch the sweep with the same SLURM options you would pass to
+   `submit_slurm_training_job.sh`:
+
+   ```bash
+   python scripts/submit_slurm_dqn_sweep.py \
+       --config WorkingFiles/Config/default.json \
+       --num-envs 4 \
+       --num-updates 500 \
+       --partition compute \
+       --mem 32G \
+       --max-runs 8
+   ```
+
+Collect the metrics after all jobs complete with:
+
+```bash
+python scripts/collect_dqn_sweep_results.py
+```
+
+### A2C sweeps
+
+Use `scripts/submit_slurm_a2c_sweep.py` to sweep the A2C hyperparameters. The
+script exposes the same command-line flags as the PPO and DQN helpers while
+iterating over the `hyperparameter_space` and `rollout_settings` combinations
+near the bottom of the file.
+
+1. Audit `hyperparameter_space` (learning rate, GAE λ, entropy/vf coefficients,
+   etc.) and the paired `rollout_settings` that specify `n_steps` and
+   `batch_size`. Adjust the lists to expand or narrow the grid.
+2. Pick a simulator configuration and results directory. By default the script
+   writes one folder per run under `WorkingFiles/Sweeps/a2c_slurm` populated with
+   the run metadata and trained checkpoint.
+3. Submit the sweep with the SLURM options you need. For example:
+
+   ```bash
+   python scripts/submit_slurm_a2c_sweep.py \
+       --config WorkingFiles/Config/default.json \
+       --num-envs 8 \
+       --num-updates 400 \
+       --partition compute \
+       --gres gpu:1 \
+       --dry-run
+   ```
+
+Aggregate the results with:
+
+```bash
+python scripts/collect_a2c_sweep_results.py
+```
+
+### Submitting all sweeps in one command
+
+When you want to schedule PPO, DQN, and A2C sweeps back-to-back, use
+`scripts/submit_all_sweeps.py`. The wrapper sequentially launches the individual
+helpers and accepts both shared and algorithm-specific flags:
+
+* `--common-args`: repeated flag that forwards arguments to every sweep.
+* `--ppo-args`, `--dqn-args`, `--a2c-args`: repeated flags that inject options
+  for the corresponding script only.
+* `--skip-<algo>`: omit a particular sweep.
+* `--dry-run`: append `--dry-run` to any sweep command that does not already
+  include it.
+
+Example command: train every agent for 1000 updates, request a 23-hour walltime
+limit, and cap memory at 16G for each job:
+
+```bash
+python scripts/submit_all_sweeps.py \
+    --common-args "--num-updates 1000" \
+    --common-args "--time 23:00:00" \
+    --common-args "--mem 16G"
+```
+
+You can add algorithm-specific overrides by repeating `--ppo-args`,
+`--dqn-args`, or `--a2c-args` with quoted argument groups, or skip a sweep (for
+example `--skip-dqn`) when only a subset of algorithms should run.
+
 The collector writes a `summary.csv` inside the sweep directory and, by default,
 cleans out `WorkingFiles/SlurmJobs` so stale `sbatch` scripts do not pile up
 between experiments. Pass `--skip-cleanup` if you want to keep those generated
