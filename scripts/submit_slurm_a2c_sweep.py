@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Submit a PPO hyperparameter sweep where each configuration runs as a SLURM job."""
+"""Submit an A2C hyperparameter sweep where each configuration runs as a SLURM job."""
 from __future__ import annotations
 
 import argparse
@@ -92,7 +92,7 @@ def build_submit_command(
 def main() -> None:
     base_dir = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(
-        description="Submit a SLURM job per PPO hyperparameter configuration."
+        description="Submit a SLURM job per A2C hyperparameter configuration.",
     )
     parser.add_argument(
         "--config",
@@ -103,7 +103,7 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=base_dir / "WorkingFiles" / "Sweeps" / "ppo_slurm",
+        default=base_dir / "WorkingFiles" / "Sweeps" / "a2c_slurm",
         help="Directory where run outputs and metadata will be stored.",
     )
     parser.add_argument(
@@ -115,12 +115,12 @@ def main() -> None:
     parser.add_argument(
         "--num-updates",
         type=int,
-        default=400,
-        help="Number of PPO updates performed by each job.",
+        default=500,
+        help="Number of training updates performed by each job.",
     )
     parser.add_argument(
         "--job-name-prefix",
-        default="ppo-sweep",
+        default="a2c-sweep",
         help="Prefix used when naming SLURM jobs.",
     )
     parser.add_argument(
@@ -202,31 +202,25 @@ def main() -> None:
     if not args.submit_script.exists():
         raise FileNotFoundError(f"Submission helper not found: {args.submit_script}")
 
-    # paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256), (2048, 512)]
-    paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256)]
     base_config = json.loads(args.config.read_text())
     hyperparameter_space: Dict[str, Sequence[object]] = {
-        "learning_rate": [1e-4, 3e-4, 1e-3],
-        "gamma": [0.99, 0.995, 0.999],
-        "gae_lambda": [0.9, 0.95],
-        "clip_range": [0.15, 0.25],
+        "learning_rate": [3e-4, 7e-4, 1e-3],
+        "gamma": [0.99, 0.995],
+        "gae_lambda": [0.9, 0.95, 0.99],
         "ent_coef": [0.0, 0.01],
         "vf_coef": [0.5, 1.0],
+        "max_grad_norm": [0.5, 0.75],
+        "rms_prop_eps": [1e-5, 1e-4],
     }
 
-    # TODO: This is a tiny hyperparameter space for testing. Delete when done using.
-    # hyperparameter_space: Dict[str, Sequence[object]] = {
-    #     "learning_rate": [3e-4, 1e-3],
-    #     "gamma": [0.99],
-    #     "gae_lambda": [0.95],
-    #     "clip_range": [0.2],
-    #     "ent_coef": [0.0],
-    #     "vf_coef": [0.5],
-    # }
+    rollout_settings: Sequence[Tuple[int, int]] = (
+        (5, 40),
+        (20, 160),
+    )
 
     run_counter = 0
 
-    for n_steps, batch_size in paired_rollout_settings:
+    for n_steps, batch_size in rollout_settings:
         grid = dict(hyperparameter_space)
         grid.update({"n_steps": [n_steps], "batch_size": [batch_size]})
 
@@ -241,7 +235,7 @@ def main() -> None:
             combo_dir.mkdir(parents=True, exist_ok=True)
             metadata_path = combo_dir / "hyperparameters.json"
             metadata = dict(combo)
-            metadata["algorithm"] = "ppo"
+            metadata["algorithm"] = "a2c"
             metadata_path.write_text(json.dumps(metadata, indent=2))
 
             output_path = combo_dir / "Agent.zip"
