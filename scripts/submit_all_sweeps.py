@@ -96,8 +96,6 @@ def main() -> None:
         raise FileNotFoundError(f"Sweep scripts directory not found: {scripts_dir}")
 
     common_args = _expand_args(args.common_args)
-    if args.dry_run and "--dry-run" not in common_args:
-        common_args.append("--dry-run")
 
     sweep_scripts = [
         ("submit_slurm_ppo_sweep.py", args.skip_ppo, _expand_args(args.ppo_args)),
@@ -115,9 +113,9 @@ def main() -> None:
             raise FileNotFoundError(f"Required sweep script not found: {script_path}")
 
         sweep_args = list(common_args)
-        if args.dry_run and "--dry-run" not in specific_args:
-            sweep_args.append("--dry-run")
         sweep_args.extend(specific_args)
+        if args.dry_run and "--dry-run" not in sweep_args:
+            sweep_args.append("--dry-run")
 
         _run_sweep(script_path, sweep_args)
 
