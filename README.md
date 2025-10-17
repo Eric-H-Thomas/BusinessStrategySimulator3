@@ -40,6 +40,24 @@ By default the script trains a PPO policy. Switch algorithms with `--algorithm`:
 python business_strategy_gym_env.py --algorithm dqn --num_envs 1 --config WorkingFiles/Config/default.json
 ```
 
+### Training PPO agents across multiple scenarios
+
+When you are ready to train separate PPO policies for many simulator
+configurations, point the batch helper at a directory of `.json` files. The
+script launches a fresh PPO run for each configuration, trains for 1,000
+timesteps, and stores the resulting checkpoints in a directory of your
+choosing. Each `.zip` file inherits the stem of the configuration it was
+trained on so you can match agents to scenarios at a glance.
+
+```
+python scripts/train_ppo_for_config_batch.py \
+    --config-dir WorkingFiles/Config/scenario_sweep \
+    --output-dir AgentFiles/ppo_batch
+```
+
+Use the optional flags documented in the script (e.g., `--timesteps`,
+`--num-envs`, or `--use-gpu`) to adjust training settings as needed.
+
 ## Running on a compute cluster
 
 When launching a single training job on a shared compute resource:
