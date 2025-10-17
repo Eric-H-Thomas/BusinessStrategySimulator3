@@ -234,9 +234,9 @@ def main() -> None:
             combo_dir = output_dir / f"run_{run_id:03d}"
             combo_dir.mkdir(parents=True, exist_ok=True)
             metadata_path = combo_dir / "hyperparameters.json"
-            metadata = dict(combo)
-            metadata["algorithm"] = "a2c"
-            metadata_path.write_text(json.dumps(metadata, indent=2))
+            combo_with_algo = dict(combo)
+            combo_with_algo["algorithm"] = "a2c"
+            metadata_path.write_text(json.dumps(combo_with_algo, indent=2))
 
             output_path = combo_dir / "Agent.zip"
             run_results_dir = combo_dir.resolve()
@@ -257,7 +257,7 @@ def main() -> None:
                 args,
                 job_name,
                 output_path,
-                combo,
+                combo_with_algo,
                 combo_config_path,
             )
 
