@@ -182,7 +182,9 @@ if __name__ == "__main__":
     from stable_baselines3.common.vec_env import DummyVecEnv
     from stable_baselines3.common.evaluation import evaluate_policy
 
-    parser = argparse.ArgumentParser(description="Train a PPO agent in the BusinessStrategyEnv.")
+    parser = argparse.ArgumentParser(
+        description="Train a reinforcement learning agent in the BusinessStrategyEnv."
+    )
     base_dir = Path(__file__).resolve().parent
     parser.add_argument(
         "--config",
@@ -197,7 +199,16 @@ if __name__ == "__main__":
         help="Path where the trained model will be saved.",
     )
     parser.add_argument(
-        "--num_updates", type=int, default=500, help="Number of PPO update iterations."
+        "--algorithm",
+        choices=("ppo", "dqn", "a2c"),
+        default="ppo",
+        help="Which Stable Baselines 3 algorithm to train.",
+    )
+    parser.add_argument(
+        "--num_updates",
+        type=int,
+        default=500,
+        help="Number of training update iterations (interpretation depends on the algorithm).",
     )
     parser.add_argument(
         "--num_envs", type=int, default=10, help="Number of parallel environments."
@@ -224,7 +235,7 @@ if __name__ == "__main__":
         dest="learning_rate",
         type=float,
         default=3e-4,
-        help="Learning rate passed to PPO.",
+        help="Learning rate passed to the selected algorithm.",
     )
     parser.add_argument(
         "--gamma",
@@ -237,7 +248,7 @@ if __name__ == "__main__":
         dest="gae_lambda",
         type=float,
         default=0.95,
-        help="Generalized Advantage Estimation lambda parameter.",
+        help="Generalized Advantage Estimation lambda parameter (used by PPO/A2C).",
     )
     parser.add_argument(
         "--clip-range",
@@ -272,7 +283,21 @@ if __name__ == "__main__":
         dest="batch_size",
         type=int,
         default=64,
-        help="Mini-batch size used during PPO updates.",
+        help="Mini-batch size used during updates (PPO/DQN).",
+    )
+    parser.add_argument(
+        "--max-grad-norm",
+        dest="max_grad_norm",
+        type=float,
+        default=0.5,
+        help="Maximum gradient norm (used by A2C).",
+    )
+    parser.add_argument(
+        "--rms-prop-eps",
+        dest="rms_prop_eps",
+        type=float,
+        default=1e-5,
+        help="Epsilon for RMSProp optimizer (used by A2C).",
     )
     parser.add_argument(
         "--eval-episodes",
@@ -280,6 +305,55 @@ if __name__ == "__main__":
         type=int,
         default=100,
         help="Number of evaluation episodes to run after training completes (0 to disable).",
+    )
+    parser.add_argument(
+        "--buffer-size",
+        dest="buffer_size",
+        type=int,
+        default=100000,
+        help="Replay buffer size (used by DQN).",
+    )
+    parser.add_argument(
+        "--exploration-fraction",
+        dest="exploration_fraction",
+        type=float,
+        default=0.1,
+        help="Exploration fraction for epsilon decay (used by DQN).",
+    )
+    parser.add_argument(
+        "--exploration-final-eps",
+        dest="exploration_final_eps",
+        type=float,
+        default=0.05,
+        help="Final value of epsilon after decay (used by DQN).",
+    )
+    parser.add_argument(
+        "--train-freq",
+        dest="train_freq",
+        type=int,
+        default=4,
+        help="How often to update the model (used by DQN).",
+    )
+    parser.add_argument(
+        "--gradient-steps",
+        dest="gradient_steps",
+        type=int,
+        default=1,
+        help="Gradient steps to perform after each rollout (used by DQN).",
+    )
+    parser.add_argument(
+        "--target-update-interval",
+        dest="target_update_interval",
+        type=int,
+        default=10000,
+        help="Frequency of target network updates (used by DQN).",
+    )
+    parser.add_argument(
+        "--learning-starts",
+        dest="learning_starts",
+        type=int,
+        default=1000,
+        help="Timesteps before learning starts (used by DQN).",
     )
 
     args = parser.parse_args()
@@ -290,31 +364,86 @@ if __name__ == "__main__":
         else "cpu"
     )
 
-    total_steps = args.n_steps * args.num_envs * args.num_updates
+    def build_vec_env(num_envs: int, *, start_seed: int = 0, force_dummy: bool = False):
+        env_fns = [
+            make_env(
+                args.config,
+                start_seed + i,
+                normalize_observations=args.normalize_obs,
+            )
+            for i in range(num_envs)
+        ]
+        if force_dummy or num_envs == 1:
+            return DummyVecEnv(env_fns)
+        return SubprocVecEnv(env_fns)
 
-    # Build vectorized envs
-    env_fns = [make_env(args.config, i, normalize_observations=args.normalize_obs) for i in range(args.num_envs)]
-    env = SubprocVecEnv(env_fns)
+    if args.algorithm == "dqn" and args.num_envs != 1:
+        raise ValueError("DQN only supports a single environment (set --num_envs 1).")
 
-    # Wrap with VecNormalize ONLY for reward normalization (avoid double obs normalization)
+    if args.algorithm == "dqn":
+        env = build_vec_env(args.num_envs, force_dummy=True)
+    else:
+        env = build_vec_env(args.num_envs)
+
     if args.normalize_reward:
-        # norm_obs=False because the env already supports its own observation normalization
-        env = VecNormalize(env, norm_obs=False, norm_reward=True, clip_obs=10.0, clip_reward=10.0)
+        env = VecNormalize(
+            env,
+            norm_obs=False,
+            norm_reward=True,
+            clip_obs=10.0,
+            clip_reward=10.0,
+        )
 
-    model = stable_baselines3.PPO(
-        "MlpPolicy",
-        env,
-        gamma=args.gamma,
-        learning_rate=args.learning_rate, # Default is 0.0003
-        gae_lambda=args.gae_lambda,
-        clip_range=args.clip_range,
-        ent_coef=args.ent_coef,
-        vf_coef=args.vf_coef,
-        n_steps=args.n_steps,
-        batch_size=args.batch_size,
-        device=device,
-        verbose=1,
-    )
+    if args.algorithm == "ppo":
+        total_steps = args.n_steps * args.num_envs * args.num_updates
+        model = stable_baselines3.PPO(
+            "MlpPolicy",
+            env,
+            gamma=args.gamma,
+            learning_rate=args.learning_rate,
+            gae_lambda=args.gae_lambda,
+            clip_range=args.clip_range,
+            ent_coef=args.ent_coef,
+            vf_coef=args.vf_coef,
+            n_steps=args.n_steps,
+            batch_size=args.batch_size,
+            device=device,
+            verbose=1,
+        )
+    elif args.algorithm == "dqn":
+        total_steps = args.num_updates * args.train_freq
+        model = stable_baselines3.DQN(
+            "MlpPolicy",
+            env,
+            gamma=args.gamma,
+            learning_rate=args.learning_rate,
+            buffer_size=args.buffer_size,
+            batch_size=args.batch_size,
+            exploration_fraction=args.exploration_fraction,
+            exploration_final_eps=args.exploration_final_eps,
+            train_freq=args.train_freq,
+            gradient_steps=args.gradient_steps,
+            target_update_interval=args.target_update_interval,
+            learning_starts=args.learning_starts,
+            device=device,
+            verbose=1,
+        )
+    else:  # args.algorithm == "a2c"
+        total_steps = args.n_steps * args.num_envs * args.num_updates
+        model = stable_baselines3.A2C(
+            "MlpPolicy",
+            env,
+            gamma=args.gamma,
+            learning_rate=args.learning_rate,
+            gae_lambda=args.gae_lambda,
+            ent_coef=args.ent_coef,
+            vf_coef=args.vf_coef,
+            max_grad_norm=args.max_grad_norm,
+            rms_prop_eps=args.rms_prop_eps,
+            n_steps=args.n_steps,
+            device=device,
+            verbose=1,
+        )
 
     model.learn(total_timesteps=total_steps)
 

@@ -28,10 +28,16 @@ This simulator models market similarities and lets agents decide when to enter o
 
 ## Training an agent
 
-Install Python dependencies (e.g., `gymnasium`, `stable-baselines3`, `torch`, and `numpy`). Then train a PPO agent with:
+Install Python dependencies (e.g., `gymnasium`, `stable-baselines3`, `torch`, and `numpy`). Then train an agent with:
 
 ```
 python business_strategy_gym_env.py --config WorkingFiles/Config/default.json --output AgentFiles/Agent.zip
+```
+
+By default the script trains a PPO policy. Switch algorithms with `--algorithm`:
+
+```bash
+python business_strategy_gym_env.py --algorithm dqn --num_envs 1 --config WorkingFiles/Config/default.json
 ```
 
 ## Running on a compute cluster
@@ -59,8 +65,9 @@ When launching a single training job on a shared compute resource:
 | --- | --- | --- | --- |
 | `--config` | Path | `WorkingFiles/Config/default.json` | Path to the simulator configuration file. |
 | `--output` | Path | `AgentFiles/Agent.zip` | Location where the trained model checkpoint will be saved. |
-| `--num_updates` | int | `500` | Number of PPO update iterations to perform. |
-| `--n-envs` | int | `10` | Number of parallel environments to run during training. |
+| `--algorithm` | str | `ppo` | Algorithm to train (`ppo`, `dqn`, or `a2c`). |
+| `--num_updates` | int | `500` | Number of update iterations (on-policy algorithms multiply this by `--n_steps` and `--num_envs`; DQN multiplies it by `--train-freq`). |
+| `--num_envs` | int | `10` | Number of parallel environments to run during training. |
 | `--use_gpu` | flag | _disabled_ | Use an available GPU (e.g., Apple MPS) instead of the CPU. |
 
 Example cluster command:
