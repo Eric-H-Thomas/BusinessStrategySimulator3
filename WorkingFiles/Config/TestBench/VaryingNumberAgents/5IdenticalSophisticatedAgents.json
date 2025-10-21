@@ -1,6 +1,6 @@
 {
   "simulation_parameters": {
-    "results_dir": "/home/eht23/research/business_strategy/BusinessStrategySimulator3/WorkingFiles/Sweeps/ppo_slurm/run_000",
+    "results_dir": "WorkingFiles/Results/TestBench/VaryingNumberAgents/5IdenticalSophisticatedAgents",
     "num_sims": 1000,
     "macro_steps_per_sim": 100,
     "skipped_turns_per_regular_turn": 1,
@@ -14,7 +14,6 @@
     "randomize_markets_per_simulation": true,
     "fixed_cost_for_existence": true
   },
-
   "control_agents": [
     {
       "agent_id": 0,
@@ -62,32 +61,45 @@
       "none_action_likelihood": 0
     }
   ],
-
   "ai_agents": [
     {
       "agent_id": 5,
       "agent_type": "stable_baselines_3",
       "production_policy": "Cournot",
-      "path_to_agent": "/home/eht23/research/business_strategy/BusinessStrategySimulator3/WorkingFiles/",
+      "path_to_agent": "WorkingFiles/AgentCheckpoints/TestBench/VaryingNumberAgents/5IdenticalSophisticatedAgents.zip",
       "RL_Algorithm": "PPO"
     }
   ],
-
   "default_economy_parameters": {
     "possible_capabilities": 2000,
     "capabilities_per_market": 100,
     "total_markets": 10,
-
     "num_market_clusters": 5,
-    "cluster_means": [800, 900, 1000, 1100, 1200],
-    "cluster_SDs": [50, 50, 50, 50, 50],
-    "markets_per_cluster": [2, 2, 2, 2, 2]
+    "cluster_means": [
+      800,
+      900,
+      1000,
+      1100,
+      1200
+    ],
+    "cluster_SDs": [
+      50,
+      50,
+      50,
+      50,
+      50
+    ],
+    "markets_per_cluster": [
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
   },
-
   "default_firm_parameters": {
     "starting_capital": 1000
   },
-
   "default_market_parameters": {
     "variable_cost_max": 5.0,
     "variable_cost_min": 0.5,
