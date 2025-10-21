@@ -196,6 +196,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    if args.job_script_dir is None:
+        args.job_script_dir = base_dir / "WorkingFiles" / "SlurmJobs" / "a2c"
+
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
