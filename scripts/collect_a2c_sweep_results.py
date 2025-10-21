@@ -124,8 +124,8 @@ def main() -> None:
     parser.add_argument(
         "--slurm-jobs-dir",
         type=Path,
-        default=Path("WorkingFiles/SlurmJobs"),
-        help="Directory containing generated sbatch files to purge after aggregation.",
+        default=Path("WorkingFiles/SlurmJobs/a2c"),
+        help="Directory containing generated sbatch files to purge after aggregation (default: WorkingFiles/SlurmJobs/a2c).",
     )
     parser.add_argument(
         "--skip-cleanup",
