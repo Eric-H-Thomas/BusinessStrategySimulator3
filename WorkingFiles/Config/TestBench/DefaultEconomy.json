@@ -1,6 +1,6 @@
 {
   "simulation_parameters": {
-    "results_dir": "WorkingFiles/Results/TestBench/VaryingEconomyDifficulty/DefaultEconomy",
+    "results_dir": "WorkingFiles/Results/TestBench/DefaultEconomy",
     "num_sims": 1000,
     "macro_steps_per_sim": 100,
     "skipped_turns_per_regular_turn": 1,
@@ -57,7 +57,7 @@
       "agent_id": 4,
       "agent_type": "stable_baselines_3",
       "production_policy": "Cournot",
-      "path_to_agent": "WorkingFiles/AgentCheckpoints/TestBench/VaryingEconomyDifficulty/DefaultEconomy.zip",
+      "path_to_agent": "WorkingFiles/AgentCheckpoints/TestBench/DefaultEconomy.zip",
       "RL_Algorithm": "PPO"
     }
   ],
