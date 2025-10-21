@@ -47,3 +47,5 @@
 # Trained agent files
 /AgentFiles
 *.pyc
+WorkingFiles/.DS_Store
+.DS_Store
