@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-"""Train a PPO agent for every simulator configuration in a directory."""
+"""Submit PPO training jobs for every simulator configuration in a directory."""
 
 from __future__ import annotations
 
 import argparse
+import json
+import shlex
+import subprocess
 from pathlib import Path
-from typing import Iterable, List
-
-import torch
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
-
-from business_strategy_gym_env import make_env
+from typing import Dict, Iterable, List
 
 
 def _collect_config_files(config_dir: Path) -> List[Path]:
@@ -31,34 +28,71 @@ def _collect_config_files(config_dir: Path) -> List[Path]:
     return configs
 
 
-def _build_vector_env(
-    *,
+def build_submit_command(
+    submit_script: Path,
+    args: argparse.Namespace,
+    job_name: str,
+    output_path: Path,
     config_path: Path,
-    num_envs: int,
-    seed: int,
-    normalize_obs: bool,
-    normalize_reward: bool,
-) -> VecNormalize | DummyVecEnv | SubprocVecEnv:
-    env_fns: Iterable = [
-        make_env(config_path, seed + idx, normalize_observations=normalize_obs)
-        for idx in range(num_envs)
+    extra_training_args: Iterable[str],
+) -> List[str]:
+    """Create the command used to submit a SLURM job for a single configuration."""
+
+    cmd: List[str] = [
+        str(submit_script),
+        "--config",
+        str(config_path),
+        "--output",
+        str(output_path),
+        "--num-updates",
+        str(args.num_updates),
+        "--num-envs",
+        str(args.num_envs),
+        "--job-name",
+        job_name,
     ]
 
-    if num_envs == 1:
-        env = DummyVecEnv(env_fns)
-    else:
-        env = SubprocVecEnv(env_fns)
+    if args.time is not None:
+        cmd.extend(["--time", args.time])
+    if args.partition is not None:
+        cmd.extend(["--partition", args.partition])
+    if args.account is not None:
+        cmd.extend(["--account", args.account])
+    if args.qos is not None:
+        cmd.extend(["--qos", args.qos])
+    if args.nodes is not None:
+        cmd.extend(["--nodes", str(args.nodes)])
+    if args.cpus_per_task is not None:
+        cmd.extend(["--cpus-per-task", str(args.cpus_per_task)])
+    if args.memory is not None:
+        cmd.extend(["--mem", args.memory])
+    if args.gres is not None:
+        cmd.extend(["--gres", args.gres])
+    if args.dependency is not None:
+        cmd.extend(["--dependency", args.dependency])
+    if args.venv is not None:
+        cmd.extend(["--venv", str(args.venv)])
+    if args.build_dir is not None:
+        cmd.extend(["--build-dir", str(args.build_dir)])
+    if args.job_script_dir is not None:
+        job_script = args.job_script_dir / f"{job_name}.sbatch"
+        cmd.extend(["--job-script", str(job_script)])
+    if args.use_gpu:
+        cmd.append("--use-gpu")
+    for extra in args.extra_sbatch:
+        cmd.extend(["--extra-sbatch", extra])
+    if args.dry_run:
+        cmd.append("--dry-run")
 
-    if normalize_reward:
-        env = VecNormalize(
-            env,
-            norm_obs=False,
-            norm_reward=True,
-            clip_obs=10.0,
-            clip_reward=10.0,
-        )
+    cmd.append("--")
+    cmd.extend(str(arg) for arg in extra_training_args)
 
-    return env
+    if args.disable_obs_normalization:
+        cmd.append("--normalize_obs")
+    if args.disable_reward_normalization:
+        cmd.append("--normalize_reward")
+
+    return cmd
 
 
 def main() -> None:
@@ -66,7 +100,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Train a PPO agent for every simulator configuration JSON in a directory."
+            "Submit a SLURM job for every simulator configuration JSON in a directory."
         )
     )
     parser.add_argument(
@@ -78,36 +112,89 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=base_dir / "AgentFiles" / "ppo_batch",
-        help="Directory where trained PPO checkpoints will be stored.",
-    )
-    parser.add_argument(
-        "--timesteps",
-        type=int,
-        default=1000,
-        help="Total number of training timesteps per configuration.",
+        default=base_dir / "WorkingFiles" / "Sweeps" / "ppo_config_batch",
+        help="Directory where run outputs and metadata will be stored.",
     )
     parser.add_argument(
         "--num-envs",
         type=int,
-        default=1,
-        help="Number of parallel environments to use while training each agent.",
+        default=8,
+        help="Number of parallel environments to request per run.",
     )
     parser.add_argument(
-        "--seed",
+        "--num-updates",
         type=int,
-        default=0,
-        help="Base random seed used to initialize environments and policies.",
+        default=400,
+        help="Number of PPO updates performed by each job.",
     )
     parser.add_argument(
-        "--no-normalize-obs",
-        action="store_true",
-        help="Disable observation normalization inside the environment wrapper.",
+        "--job-name-prefix",
+        default="ppo-config",
+        help="Prefix used when naming SLURM jobs.",
     )
     parser.add_argument(
-        "--no-normalize-reward",
+        "--submit-script",
+        type=Path,
+        default=base_dir / "scripts" / "submit_slurm_training_job.sh",
+        help="Path to the helper that generates the sbatch file.",
+    )
+    parser.add_argument(
+        "--time",
+        help="Requested walltime for each job (e.g., 04:00:00).",
+    )
+    parser.add_argument("--partition", help="SLURM partition/queue name.")
+    parser.add_argument("--account", help="SLURM account to charge.")
+    parser.add_argument("--qos", help="QoS name to request.")
+    parser.add_argument("--nodes", type=int, help="Nodes per job.")
+    parser.add_argument(
+        "--cpus-per-task",
+        type=int,
+        dest="cpus_per_task",
+        help="CPUs per task.",
+    )
+    parser.add_argument("--mem", dest="memory", help="Memory request (e.g., 16G).")
+    parser.add_argument("--gres", help="Generic resource request (e.g., gpu:1).")
+    parser.add_argument("--dependency", help="SLURM dependency specification.")
+    parser.add_argument(
+        "--extra-sbatch",
+        action="append",
+        default=[],
+        help="Additional raw #SBATCH lines to include.",
+    )
+    parser.add_argument(
+        "--venv",
+        type=Path,
+        help="Virtual environment activated inside each job.",
+    )
+    parser.add_argument(
+        "--build-dir",
+        type=Path,
+        help="Build directory appended to PYTHONPATH inside the job.",
+    )
+    parser.add_argument(
+        "--job-script-dir",
+        type=Path,
+        help="Directory where generated sbatch scripts should be stored.",
+    )
+    parser.add_argument(
+        "--use-gpu",
         action="store_true",
-        help="Disable reward normalization using VecNormalize.",
+        help="Request GPU resources and enable GPU training.",
+    )
+    parser.add_argument(
+        "--disable-obs-normalization",
+        action="store_true",
+        help="Disable observation normalization in the environment.",
+    )
+    parser.add_argument(
+        "--disable-reward-normalization",
+        action="store_true",
+        help="Disable reward normalization during training.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Generate job scripts without submitting to SLURM.",
     )
     parser.add_argument(
         "--learning-rate",
@@ -164,11 +251,6 @@ def main() -> None:
         default=64,
         help="Mini-batch size used during gradient updates.",
     )
-    parser.add_argument(
-        "--use-gpu",
-        action="store_true",
-        help="Use the MPS GPU if available instead of the CPU.",
-    )
 
     args = parser.parse_args()
 
@@ -176,58 +258,70 @@ def main() -> None:
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    if args.job_script_dir is None:
+        args.job_script_dir = base_dir / "WorkingFiles" / "SlurmJobs" / "ppo_config"
+
+    if not args.submit_script.exists():
+        raise FileNotFoundError(f"Submission helper not found: {args.submit_script}")
+
     configs = _collect_config_files(config_dir)
 
-    device = (
-        torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-        if args.use_gpu
-        else "cpu"
-    )
-
-    normalize_obs = not args.no_normalize_obs
-    normalize_reward = not args.no_normalize_reward
+    hyperparameters: Dict[str, float | int | str] = {
+        "algorithm": "ppo",
+        "learning_rate": args.learning_rate,
+        "gamma": args.gamma,
+        "gae_lambda": args.gae_lambda,
+        "clip_range": args.clip_range,
+        "ent_coef": args.ent_coef,
+        "vf_coef": args.vf_coef,
+        "n_steps": args.n_steps,
+        "batch_size": args.batch_size,
+    }
 
     for index, config_path in enumerate(configs):
-        print(f"Training PPO agent for {config_path.name}...")
-        seed = args.seed + index * args.num_envs
+        run_dir = output_dir / f"{index:03d}_{config_path.stem}"
+        run_dir.mkdir(parents=True, exist_ok=True)
 
-        env = _build_vector_env(
-            config_path=config_path,
-            num_envs=args.num_envs,
-            seed=seed,
-            normalize_obs=normalize_obs,
-            normalize_reward=normalize_reward,
+        output_path = run_dir / "Agent.zip"
+
+        metadata = dict(hyperparameters)
+        metadata["config_source"] = str(config_path.resolve())
+        (run_dir / "hyperparameters.json").write_text(json.dumps(metadata, indent=2))
+
+        config_data = json.loads(config_path.read_text())
+        sim_params = config_data.setdefault("simulation_parameters", {})
+        sim_params["results_dir"] = str(run_dir.resolve())
+        for agent in config_data.get("ai_agents", []):
+            agent["path_to_agent"] = str(output_path.resolve())
+
+        run_config_path = run_dir / "config.json"
+        run_config_path.write_text(json.dumps(config_data, indent=2))
+
+        extra_training_args: List[str] = []
+        for key, value in hyperparameters.items():
+            option = f"--{key.replace('_', '-')}"
+            extra_training_args.extend([option, str(value)])
+
+        job_name = f"{args.job_name_prefix}-{index:03d}"
+
+        cmd = build_submit_command(
+            args.submit_script,
+            args,
+            job_name,
+            output_path,
+            run_config_path,
+            extra_training_args,
         )
 
-        rollout_cap = max(1, args.timesteps // max(1, args.num_envs))
-        rollout_steps = min(args.n_steps, rollout_cap)
-        effective_batch_size = max(1, min(args.batch_size, rollout_steps * args.num_envs))
+        quoted = " ".join(shlex.quote(part) for part in cmd)
+        print(f"[config {index:03d}] {quoted}")
 
-        model = PPO(
-            "MlpPolicy",
-            env,
-            gamma=args.gamma,
-            learning_rate=args.learning_rate,
-            gae_lambda=args.gae_lambda,
-            clip_range=args.clip_range,
-            ent_coef=args.ent_coef,
-            vf_coef=args.vf_coef,
-            n_steps=rollout_steps,
-            batch_size=effective_batch_size,
-            device=device,
-            verbose=1,
-        )
+        subprocess.run(cmd, check=True)
 
-        try:
-            model.learn(total_timesteps=args.timesteps)
-        finally:
-            env.close()
-
-        checkpoint_path = output_dir / f"{config_path.stem}.zip"
-        model.save(str(checkpoint_path))
-        print(f"Saved PPO checkpoint to {checkpoint_path}")
-
-    print("Finished training PPO agents for all configurations.")
+    if args.dry_run:
+        print("Dry run complete; inspect the generated sbatch scripts before submitting.")
+    else:
+        print(f"Submitted {len(configs)} jobs via {args.submit_script}.")
 
 
 if __name__ == "__main__":
