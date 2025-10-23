@@ -15,13 +15,17 @@ from business_strategy_gym_env import make_env
 
 
 def _collect_config_files(config_dir: Path) -> List[Path]:
-    """Return all JSON configuration files inside ``config_dir`` sorted by name."""
+    """Return all JSON configuration files inside ``config_dir`` recursively sorted by name."""
     if not config_dir.exists():
         raise FileNotFoundError(f"Config directory does not exist: {config_dir}")
     if not config_dir.is_dir():
         raise NotADirectoryError(f"Config path is not a directory: {config_dir}")
 
-    configs = sorted(p for p in config_dir.iterdir() if p.suffix.lower() == ".json")
+    configs = sorted(
+        p
+        for p in config_dir.rglob("*.json")
+        if p.is_file() and p.suffix.lower() == ".json"
+    )
     if not configs:
         raise FileNotFoundError(f"No JSON configuration files found in {config_dir}")
     return configs
