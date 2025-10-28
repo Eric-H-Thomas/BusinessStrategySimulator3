@@ -101,6 +101,14 @@ def _build_simulator_environment(sim_bin: Path) -> dict:
 
     pythonpath_parts = [str(REPO_ROOT), str(sim_bin.parent)]
 
+    # Ensure the stdlib directories are present even when running inside a
+    # virtual environment where they might not be included on ``sys.path``.
+    stdlib_paths = {
+        sysconfig.get_path("stdlib"),
+        sysconfig.get_path("platstdlib"),
+    }
+    pythonpath_parts.extend(p for p in stdlib_paths if p)
+
     # Mirror the active interpreter's sys.path so that the embedded Python
     # instance can locate the standard library (e.g. ``encodings``) as well as
     # packages provided by the virtual environment. This is essential on
@@ -128,7 +136,13 @@ def _build_simulator_environment(sim_bin: Path) -> dict:
     pythonpath_parts = [part for part in pythonpath_parts if part]
     env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(map(str, pythonpath_parts)))
 
-    env.setdefault("PYTHONHOME", sys.prefix)
+    # ``PYTHONHOME`` should point at the interpreter's "real" prefix so that the
+    # embedded interpreter can locate the standard library.  When running inside
+    # a venv ``sys.prefix`` will be the virtual environment, which may only
+    # contain site-packages.  Falling back to ``sys.prefix`` retains the existing
+    # behaviour when no separate base prefix is available.
+    python_home = getattr(sys, "base_prefix", None) or sys.prefix
+    env.setdefault("PYTHONHOME", python_home)
 
     libdir = sysconfig.get_config_var("LIBDIR")
     if libdir:
