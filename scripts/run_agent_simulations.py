@@ -100,6 +100,14 @@ def _build_simulator_environment(sim_bin: Path) -> dict:
     env = os.environ.copy()
 
     pythonpath_parts = [str(REPO_ROOT), str(sim_bin.parent)]
+
+    # Mirror the active interpreter's sys.path so that the embedded Python
+    # instance can locate the standard library (e.g. ``encodings``) as well as
+    # packages provided by the virtual environment. This is essential on
+    # systems where the stdlib is bundled inside a zip archive such as
+    # ``python311.zip``.
+    pythonpath_parts.extend(sys.path)
+
     try:
         pythonpath_parts.extend(site.getsitepackages())
     except AttributeError:
@@ -118,7 +126,7 @@ def _build_simulator_environment(sim_bin: Path) -> dict:
         pythonpath_parts.append(existing_pythonpath)
 
     pythonpath_parts = [part for part in pythonpath_parts if part]
-    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(pythonpath_parts))
+    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(map(str, pythonpath_parts)))
 
     env.setdefault("PYTHONHOME", sys.prefix)
 
