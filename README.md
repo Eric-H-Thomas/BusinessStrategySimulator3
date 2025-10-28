@@ -76,5 +76,6 @@ BusinessStrategySimulator3/
 
 * [Running on a compute cluster](docs/cluster.md)
 * [Hyperparameter sweep utilities](docs/hyperparameter_sweeps.md)
+* [Batch evaluation with run_agent_simulations.py](docs/run_agent_simulations.md) – Run trained agent scenarios in bulk and export analysis plots.
 
 The repository serves as a foundation for exploring how reinforcement learning can guide firms when entering or exiting markets.
