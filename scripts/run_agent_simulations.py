@@ -8,8 +8,10 @@ import json
 import os
 import re
 import shutil
+import site
 import subprocess
 import sys
+import sysconfig
 import tempfile
 from pathlib import Path
 from typing import Iterable, Optional
@@ -92,6 +94,46 @@ def prepare_config(
     return config
 
 
+def _build_simulator_environment(sim_bin: Path) -> dict:
+    """Return a subprocess environment that mirrors the active Python setup."""
+
+    env = os.environ.copy()
+
+    pythonpath_parts = [str(REPO_ROOT), str(sim_bin.parent)]
+    try:
+        pythonpath_parts.extend(site.getsitepackages())
+    except AttributeError:
+        # ``getsitepackages`` is not available in virtualenv's "no site" mode.
+        pass
+
+    try:
+        user_site = site.getusersitepackages()
+    except AttributeError:
+        user_site = None
+    if user_site:
+        pythonpath_parts.append(user_site)
+
+    existing_pythonpath = env.get("PYTHONPATH")
+    if existing_pythonpath:
+        pythonpath_parts.append(existing_pythonpath)
+
+    pythonpath_parts = [part for part in pythonpath_parts if part]
+    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(pythonpath_parts))
+
+    env.setdefault("PYTHONHOME", sys.prefix)
+
+    libdir = sysconfig.get_config_var("LIBDIR")
+    if libdir:
+        ld_library_parts = [libdir]
+        existing_ld = env.get("LD_LIBRARY_PATH")
+        if existing_ld:
+            ld_library_parts.append(existing_ld)
+        ld_library_parts = [part for part in ld_library_parts if part]
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(dict.fromkeys(ld_library_parts))
+
+    return env
+
+
 def run_simulator(sim_bin: Path, config_data: dict) -> None:
     """Execute the C++ simulator with a temporary configuration file."""
 
@@ -99,11 +141,7 @@ def run_simulator(sim_bin: Path, config_data: dict) -> None:
         temp_config = Path(tmpdir) / "config.json"
         temp_config.write_text(json.dumps(config_data, indent=2), encoding="utf-8")
 
-        env = os.environ.copy()
-        pythonpath_parts = [str(REPO_ROOT), str(sim_bin.parent)]
-        if env.get("PYTHONPATH"):
-            pythonpath_parts.append(env["PYTHONPATH"])
-        env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+        env = _build_simulator_environment(sim_bin)
 
         subprocess.run(
             [str(sim_bin), str(temp_config)],
