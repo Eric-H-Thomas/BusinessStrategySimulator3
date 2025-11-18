@@ -126,6 +126,10 @@ void validate_config(const std::string& strConfigFilePath) {
             "default_economy_parameters.cluster_SDs must be an array");
     require(econ.contains("markets_per_cluster") && econ["markets_per_cluster"].is_array(),
             "default_economy_parameters.markets_per_cluster must be an array");
+    require(econ.contains("min_shareability") && econ["min_shareability"].is_number(),
+            "default_economy_parameters.min_shareability must be numeric");
+    require(econ.contains("max_shareability") && econ["max_shareability"].is_number(),
+            "default_economy_parameters.max_shareability must be numeric");
 
     for (const auto& v : econ["cluster_means"]) {
         require(v.is_number_integer(), "cluster_means values must be integers");
@@ -144,6 +148,14 @@ void validate_config(const std::string& strConfigFilePath) {
             "cluster_SDs length must match num_market_clusters");
     require(econ["markets_per_cluster"].size() == static_cast<size_t>(numClusters),
             "markets_per_cluster length must match num_market_clusters");
+    double dbMinShareability = econ["min_shareability"].get<double>();
+    double dbMaxShareability = econ["max_shareability"].get<double>();
+    require(dbMinShareability >= 0.0 && dbMinShareability <= 1.0,
+            "default_economy_parameters.min_shareability must be between 0 and 1");
+    require(dbMaxShareability >= 0.0 && dbMaxShareability <= 1.0,
+            "default_economy_parameters.max_shareability must be between 0 and 1");
+    require(dbMinShareability <= dbMaxShareability,
+            "default_economy_parameters.min_shareability must not exceed max_shareability");
 
     // Firm parameters
     require(config.contains("default_firm_parameters") &&

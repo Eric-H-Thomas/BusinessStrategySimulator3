@@ -55,6 +55,7 @@ public:
     [[maybe_unused]] vector<double> generate_state_observation(const int& iAgentID);
     vector<double> get_capital_representation(const int& iAgentID);
     vector<double> get_market_overlap_representation();
+    vector<double> get_capability_shareability_representation();
     vector<double> get_variable_cost_representation(const int& iAgentID);
     vector<double> get_fixed_cost_representation(const int& iAgentID);
     vector<double> get_market_portfolio_representation(const int& iAgentID);
@@ -118,6 +119,10 @@ private:
     vector<Action> get_actions_for_all_agents_ai_agent_turn(const int& iActingAgentID, const int& iAIAgentActionID);
     Action convert_action_ID_to_action_object(const int& iActingAgentID, const int& iAIAgentActionID);
     void execute_actions(const vector<Action>& vecActions, map<int, double>* pMapFirmIDToCapitalChange);
+    vector<int> get_capability_usage_counts_for_firm(const Firm* firmPtr);
+    double calculate_entry_cost_for_market(const Market& market, const vector<int>& capabilityUsageCounts,
+                                          bool bMarketCurrentlyInPortfolio) const;
+    void recompute_entry_and_fixed_costs_for_firm(Firm* firmPtr);
     void execute_entry_action(const Action& action, map<int, double>* pMapFirmIDToCapitalChange);
     void execute_exit_action(const Action& action, map<int, double>* pMapFirmIDToCapitalChange);
     Action get_agent_action(const ControlAgent& agent);

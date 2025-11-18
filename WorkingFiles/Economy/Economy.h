@@ -17,7 +17,7 @@ public:
     Economy();
     Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNumMarketClusters, vector<int> vecClusterMeans,
             vector<int> vecClusterSDs, vector<int> vecMarketsPerCluster, double dbMarketEntryCostMax,
-            double dbMarketEntryCostMin);
+            double dbMarketEntryCostMin, double dbCapabilityShareabilityMin, double dbCapabilityShareabilityMax);
 
     // Getters
     [[nodiscard]] const Market&           get_market_by_ID(int iMarketID)   const;
@@ -31,6 +31,7 @@ public:
     [[nodiscard]] int                     get_num_market_clusters()         const;
     [[nodiscard]] int                     get_num_possible_capabilities()   const;
     [[nodiscard]] int                     get_num_capabilities_per_market() const;
+    [[nodiscard]] const vector<double>&   get_vec_capability_shareability() const;
 
     // Miscellaneous
     void add_market(const Market& market);
@@ -45,4 +46,5 @@ private:
     vector<int> vecClusterSDs;
     vector<int> vecMarketsPerCluster;
     vector<double> vecCapabilityCosts;
+    vector<double> vecCapabilityShareability;
 };
