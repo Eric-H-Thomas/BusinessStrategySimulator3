@@ -86,7 +86,9 @@
       2,
       2,
       2
-    ]
+    ],
+    "min_shareability": 0.0,
+    "max_shareability": 1.0
   },
   "default_firm_parameters": {
     "starting_capital": 1300

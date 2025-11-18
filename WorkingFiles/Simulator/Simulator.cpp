@@ -220,7 +220,9 @@ void Simulator::init_economy() {
                                 vecClusterSDs,
                                 vecMarketsPerCluster,
                                 market_parameters["market_entry_cost_max"],
-                                market_parameters["market_entry_cost_min"]);
+                                market_parameters["market_entry_cost_min"],
+                                economy_parameters["min_shareability"],
+                                economy_parameters["max_shareability"]);
     }
 
     catch (const nlohmann::json::exception& e) {
@@ -257,7 +259,9 @@ void Simulator::reset_economy() {
                                 vecClusterSDs,
                                 vecMarketsPerCluster,
                                 market_parameters["market_entry_cost_max"],
-                                market_parameters["market_entry_cost_min"]);
+                                market_parameters["market_entry_cost_min"],
+                                economy_parameters["min_shareability"],
+                                economy_parameters["max_shareability"]);
     }
 
     catch (const nlohmann::json::exception& e) {
@@ -790,11 +794,93 @@ void Simulator::execute_actions(const vector<Action>& vecActions, map<int, doubl
     } // End of for loop
 }
 
+vector<int> Simulator::get_capability_usage_counts_for_firm(const Firm* firmPtr) {
+    vector<int> vecCapabilityUsage(economy.get_num_possible_capabilities(), 0);
+
+    for (int iMarketID : firmPtr->getSetMarketIDs()) {
+        const auto& vecMarketCapabilities = economy.get_market_by_ID(iMarketID).get_vec_capabilities();
+        if (vecMarketCapabilities.size() != vecCapabilityUsage.size()) {
+            throw std::runtime_error("Mismatch between market capability vector size and capability usage vector size");
+        }
+        vecCapabilityUsage = MiscUtils::vector_addition(vecCapabilityUsage, vecMarketCapabilities);
+    }
+
+    return vecCapabilityUsage;
+}
+
+double Simulator::calculate_entry_cost_for_market(const Market& market, const vector<int>& capabilityUsageCounts,
+                                                  bool bMarketCurrentlyInPortfolio) const {
+    const auto& vecMarketCapabilities = market.get_vec_capabilities();
+    const auto& vecCapabilityCosts = economy.get_vec_capability_costs();
+    const auto& vecCapabilityShareability = economy.get_vec_capability_shareability();
+
+    if (vecMarketCapabilities.size() != capabilityUsageCounts.size() ||
+        vecMarketCapabilities.size() != vecCapabilityCosts.size() ||
+        vecMarketCapabilities.size() != vecCapabilityShareability.size()) {
+        throw std::runtime_error("Mismatch between capability vectors while calculating entry cost");
+    }
+
+    double dbEntryCost = 0.0;
+    for (size_t i = 0; i < vecMarketCapabilities.size(); i++) {
+        if (!vecMarketCapabilities[i]) {
+            continue;
+        }
+
+        int iUsageCount = capabilityUsageCounts[i];
+        if (bMarketCurrentlyInPortfolio) {
+            if (iUsageCount <= 0) {
+                throw std::runtime_error("Invalid capability usage count for market already in portfolio");
+            }
+        }
+        else {
+            iUsageCount += 1;
+        }
+
+        double dbCapabilityCost = vecCapabilityCosts[i];
+        double dbShareability = vecCapabilityShareability[i];
+        double dbContribution = (1.0 - dbShareability) * dbCapabilityCost;
+        dbContribution += dbShareability * (dbCapabilityCost / static_cast<double>(iUsageCount));
+        dbEntryCost += dbContribution;
+    }
+
+    return dbEntryCost;
+}
+
+void Simulator::recompute_entry_and_fixed_costs_for_firm(Firm* firmPtr) {
+    auto vecCapabilityUsageCounts = get_capability_usage_counts_for_firm(firmPtr);
+
+    for (const Market& market : economy.get_vec_markets()) {
+        bool bMarketCurrentlyInPortfolio = firmPtr->is_in_market(market);
+        double dbEntryCost = calculate_entry_cost_for_market(market, vecCapabilityUsageCounts, bMarketCurrentlyInPortfolio);
+
+        auto pairFirmMarket = std::make_pair(firmPtr->getFirmID(), market.get_market_id());
+        double dbPriorEntryCost = dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket);
+        if (dbEntryCost != dbPriorEntryCost) {
+            dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket) = dbEntryCost;
+            currentSimulationHistoryPtr->record_entry_cost_change(iCurrentMicroTimeStep,
+                                                                  dbEntryCost, pairFirmMarket.first, pairFirmMarket.second);
+        }
+
+        if (bMarketCurrentlyInPortfolio) {
+            double dbFixedCostAsPctOfEntryCost = market.getFixedCostAsPercentageOfEntryCost() * 0.01;
+            double dbFixedCost = dbEntryCost * dbFixedCostAsPctOfEntryCost;
+            double dbPriorFixedCost = dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket);
+            if (dbFixedCost != dbPriorFixedCost) {
+                dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket) = dbFixedCost;
+                currentSimulationHistoryPtr->record_fixed_cost_change(iCurrentMicroTimeStep,
+                                                                      dbFixedCost, pairFirmMarket.first, pairFirmMarket.second);
+            }
+        }
+    }
+}
+
 void Simulator::execute_entry_action(const Action& action, map<int, double>* pMapFirmIDToCapitalChange) {
-    // Get the entry cost for the firm
     auto firmPtr = get_firm_ptr_from_agent_id(action.iAgentID);
+    auto marketCopy = economy.get_market_by_ID(action.iMarketID);
+
+    auto vecCapabilityUsageCounts = get_capability_usage_counts_for_firm(firmPtr);
+    double dbEntryCost = calculate_entry_cost_for_market(marketCopy, vecCapabilityUsageCounts, false);
     auto pairFirmMarket = std::make_pair(firmPtr->getFirmID(), action.iMarketID);
-    double dbEntryCost = dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket);
 
     // Ensure the firm has enough capital to cover the entry cost
     double dbCurrentCapital = firmPtr->getDbCapital();
@@ -814,15 +900,6 @@ void Simulator::execute_entry_action(const Action& action, map<int, double>* pMa
     // Update the map of firm IDs to capital change with the entry cost of this action
     pMapFirmIDToCapitalChange->at(firmPtr->getFirmID()) -= dbEntryCost;
 
-    // Update the fixed cost for this firm-market combo
-    auto marketCopy = economy.get_market_by_ID(action.iMarketID);
-    double dbFixedCostAsPctOfEntryCost = marketCopy.getFixedCostAsPercentageOfEntryCost();
-    dbFixedCostAsPctOfEntryCost *= 0.01; // Scaling factor for percentage expressed as whole number
-    double dbFixedCost = dbFixedCostAsPctOfEntryCost * dbEntryCost;
-    dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket) = dbFixedCost;
-    currentSimulationHistoryPtr->record_fixed_cost_change(iCurrentMicroTimeStep,
-                                                          dbFixedCost, pairFirmMarket.first, pairFirmMarket.second);
-
     // Calculate and store the exit cost for this firm-market combo
     double dbExitCostAsPctOfEntryCost = marketCopy.getExitCostAsPercentageOfEntryCost();
     dbExitCostAsPctOfEntryCost *= 0.01; // Scaling factor for percentage expressed as whole number
@@ -836,42 +913,8 @@ void Simulator::execute_entry_action(const Action& action, map<int, double>* pMa
     firmPtr->add_market_to_portfolio(action.iMarketID);
     currentSimulationHistoryPtr->record_market_presence_change(iCurrentMicroTimeStep, true, firmPtr->getFirmID(), action.iMarketID);
 
-    // Update the entry cost for this firm for all markets
-    for (const Market& market : economy.get_vec_markets()) {
-        // Get vector of capabilities the firm lacks to enter the market
-        auto vecFirmCapabilities = firmPtr->getVecCapabilities();
-        const auto& vecMarketCapabilities = market.get_vec_capabilities();
-
-        if (vecFirmCapabilities.size() != vecMarketCapabilities.size()) {
-            throw std::runtime_error("Mismatch between firm capability vector size and market capability vector size in execute_exit_action()");
-        }
-
-        std::vector<int> vecMissingCapabilities;
-        // Reserve space for the missing capabilities vector
-        vecMissingCapabilities.reserve(vecFirmCapabilities.size());
-
-        // Set the vecMissingCapabilities vector to 1 where the market requires a capability the firm does not have
-        for (size_t i = 0; i < vecFirmCapabilities.size(); i++) {
-            if (vecMarketCapabilities[i] && !vecFirmCapabilities[i]) {
-                vecMissingCapabilities.push_back(1);
-            }
-            else {
-                vecMissingCapabilities.push_back(0);
-            }
-        }
-
-        // Calculate the cost of the missing capabilities vector
-        double dbCost = MiscUtils::dot_product(vecMissingCapabilities, economy.get_vec_capability_costs());
-
-        // Update the data cache and the history if the entry cost has changed since it was last calculated
-        auto pair = std::make_pair(firmPtr->getFirmID(), market.get_market_id());
-        double dbPriorCost = dataCache.mapFirmMarketComboToEntryCost.at(pair);
-        if (dbCost != dbPriorCost) {
-            dataCache.mapFirmMarketComboToEntryCost.at(pair) = dbCost;
-            currentSimulationHistoryPtr->record_entry_cost_change(iCurrentMicroTimeStep,
-                                                                  dbCost, firmPtr->getFirmID(), market.get_market_id());
-        }
-    }
+    // Recompute entry and fixed costs to reflect the updated portfolio
+    recompute_entry_and_fixed_costs_for_firm(firmPtr);
 }
 
 void Simulator::execute_exit_action(const Action& action, map<int, double>* pMapFirmIDToCapitalChange) {
@@ -913,42 +956,8 @@ void Simulator::execute_exit_action(const Action& action, map<int, double>* pMap
     firmPtr->remove_market_from_portfolio(action.iMarketID);
     currentSimulationHistoryPtr->record_market_presence_change(iCurrentMicroTimeStep, false, firmPtr->getFirmID(), action.iMarketID);
 
-    // Update the entry cost for this firm for each market
-    for (const Market& market : economy.get_vec_markets()) {
-        // Get vector of capabilities the firm lacks to enter the market
-        auto vecFirmCapabilities = firmPtr->getVecCapabilities();
-        const auto& vecMarketCapabilities = market.get_vec_capabilities();
-
-        if (vecFirmCapabilities.size() != vecMarketCapabilities.size()) {
-            throw std::runtime_error("Mismatch between firm capability vector size and market capability vector size in execute_entry_action()");
-        }
-
-        std::vector<int> vecMissingCapabilities;
-        // Reserve space for the missing capabilities vector
-        vecMissingCapabilities.reserve(vecFirmCapabilities.size());
-
-        // Set the vecMissingCapabilities vector to 1 where the market requires a capability the firm does not have
-        for (size_t i = 0; i < vecFirmCapabilities.size(); i++) {
-        if (vecMarketCapabilities[i] && !vecFirmCapabilities[i]) {
-            vecMissingCapabilities.push_back(1);
-        }
-        else {
-            vecMissingCapabilities.push_back(0);
-        }
-        }
-
-        // Calculate the cost of the missing capabilities vector
-        double dbCost = MiscUtils::dot_product(vecMissingCapabilities, economy.get_vec_capability_costs());
-
-        // Update the data cache and the history if the entry cost has changed since it was last calculated
-        auto pair = std::make_pair(firmPtr->getFirmID(), market.get_market_id());
-        double dbPriorCost = dataCache.mapFirmMarketComboToEntryCost.at(pair);
-        if (dbCost != dbPriorCost) {
-            dataCache.mapFirmMarketComboToEntryCost.at(pair) = dbCost;
-            currentSimulationHistoryPtr->record_entry_cost_change(iCurrentMicroTimeStep,
-                                                                  dbCost, firmPtr->getFirmID(), market.get_market_id());
-        }
-    }
+    // Recompute entry and fixed costs to reflect the updated portfolio
+    recompute_entry_and_fixed_costs_for_firm(firmPtr);
 
     // Record changes to revenue, price, and quantity
     currentSimulationHistoryPtr->record_revenue_change(iCurrentMicroTimeStep, 0.0, firmPtr->getFirmID(), action.iMarketID);
@@ -1435,16 +1444,17 @@ bool Simulator::is_bankrupt(const int& iAgentID) {
      *
      * 1. Capital of all firms (vector of dimension F)
      * 2. Market overlap structure (matrix of dimension MxM)
-     * 3. Variable costs for all firm-market combinations realized thus far in the simulation
+     * 3. Capability shareability values (vector of dimension equal to the number of capabilities in the economy)
+     * 4. Variable costs for all firm-market combinations realized thus far in the simulation
      *    (i.e., if firm i is present or has been present in market j, then we give the AI agents visibility
      *    to the variable cost for firm i--market j) (matrix of dimension FxM)
-     * 4. Fixed cost for each firm-market combination (matrix of dimension FxM)
-     * 5. Market portfolio of all firms (matrix of dimension FxM)
-     * 6. Entry cost for every firm-market combination (matrix of dimension FxM)
-     * 7. Demand intercept in each market (vector of dimension M)
-     * 8. Slope in each market (vector of dimension M)
-     * 9. Most recent quantity for each firm-market combination (matrix of dimension FxM)
-     * 10. Most recent price for each firm-market combination (matrix of dimension FxM)
+     * 5. Fixed cost for each firm-market combination (matrix of dimension FxM)
+     * 6. Market portfolio of all firms (matrix of dimension FxM)
+     * 7. Entry cost for every firm-market combination (matrix of dimension FxM)
+     * 8. Demand intercept in each market (vector of dimension M)
+     * 9. Slope in each market (vector of dimension M)
+     * 10. Most recent quantity for each firm-market combination (matrix of dimension FxM)
+     * 11. Most recent price for each firm-market combination (matrix of dimension FxM)
      *
      * These 10 components of the state representation are each flattened into one-dimensional vectors
      * and then concatenated to create a single state observation vector.
@@ -1463,6 +1473,7 @@ bool Simulator::is_bankrupt(const int& iAgentID) {
     vector<vector<double>> state_observation;
     state_observation.push_back(get_capital_representation(iAgentID));
     state_observation.push_back(get_market_overlap_representation());
+    state_observation.push_back(get_capability_shareability_representation());
     state_observation.push_back(get_variable_cost_representation(iAgentID));
     state_observation.push_back(get_fixed_cost_representation(iAgentID));
     state_observation.push_back(get_market_portfolio_representation(iAgentID));
@@ -1531,6 +1542,10 @@ vector<double> Simulator::get_market_overlap_representation() {
         }
     }
     return MiscUtils::flatten(currentSimulationHistoryPtr->vecOfVecMarketOverlapMatrix);
+}
+
+vector<double> Simulator::get_capability_shareability_representation() {
+    return economy.get_vec_capability_shareability();
 }
 
 vector<double> Simulator::get_variable_cost_representation(const int& iAgentID) {

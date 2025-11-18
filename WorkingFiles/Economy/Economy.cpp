@@ -10,7 +10,7 @@
 
 Economy::Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNumMarketClusters, vector<int> vecClusterMeans,
                  vector<int> vecClusterSDs, vector<int> vecMarketsPerCluster, double dbMarketEntryCostMax,
-                 double dbMarketEntryCostMin) {
+                 double dbMarketEntryCostMin, double dbCapabilityShareabilityMin, double dbCapabilityShareabilityMax) {
 
     this->iPossibleCapabilities = iPossibleCapabilities;
     this->iCapabilitiesPerMarket = iCapabilitiesPerMarket;
@@ -30,9 +30,15 @@ Economy::Economy(int iPossibleCapabilities, int iCapabilitiesPerMarket, int iNum
     // Create a uniform distribution in the range [dbCapCostMin, dbCapCostMax) to draw capability costs
     std::uniform_real_distribution<double> capability_cost_dist(dbCapCostMin, dbCapCostMax);
 
+    std::uniform_real_distribution<double> capability_shareability_dist(dbCapabilityShareabilityMin,
+                                                                        dbCapabilityShareabilityMax);
+
     for (int i = 0; i < iPossibleCapabilities; i++) {
         // Append a randomly generated capability cost to the capability cost vector
         this->vecCapabilityCosts.push_back(capability_cost_dist(gen));
+
+        // Append a randomly generated capability shareability value to the vector
+        this->vecCapabilityShareability.push_back(capability_shareability_dist(gen));
     }
 }
 
@@ -52,6 +58,7 @@ const vector<int>& Economy::get_vec_cluster_SDs()           const { return vecCl
 const vector<int>& Economy::get_vec_markets_per_cluster()   const { return vecMarketsPerCluster; }
 const vector<Market>& Economy::get_vec_markets()            const { return vecMarkets; }
 const vector<double>& Economy::get_vec_capability_costs()   const { return vecCapabilityCosts; }
+const vector<double>& Economy::get_vec_capability_shareability() const { return vecCapabilityShareability; }
 
 const Market& Economy::get_market_by_ID(int iMarketID) const {
     for (const Market& market : vecMarkets) {
