@@ -10,6 +10,7 @@ _obs_scale = None
 _slices_initialized = False
 _num_agents = None
 _num_markets = None
+_num_possible_capabilities = None
 
 
 def _init_slices(observation: np.ndarray):
@@ -17,17 +18,19 @@ def _init_slices(observation: np.ndarray):
     global capital_slice, overlap_slice, variable_cost_slice, fixed_cost_slice
     global market_portfolio_slice, entry_cost_slice, demand_intercept_slice
     global demand_slope_slice, quantity_slice, price_slice, _slices_initialized
-    global _num_agents, _num_markets
+    global shareability_slice
+    global _num_agents, _num_markets, _num_possible_capabilities
 
     if _slices_initialized:
         return
 
-    if _num_agents is None or _num_markets is None:
-        raise ValueError("Agent and market counts not initialized")
+    if _num_agents is None or _num_markets is None or _num_possible_capabilities is None:
+        raise ValueError("Agent, market, and capability counts not initialized")
 
     expected_len = (
         _num_agents
         + _num_markets ** 2
+        + _num_possible_capabilities
         + 6 * _num_agents * _num_markets
         + 2 * _num_markets
     )
@@ -41,6 +44,8 @@ def _init_slices(observation: np.ndarray):
     start += _num_agents
     overlap_slice = slice(start, start + _num_markets ** 2)
     start += _num_markets ** 2
+    shareability_slice = slice(start, start + _num_possible_capabilities)
+    start += _num_possible_capabilities
     variable_cost_slice = slice(start, start + _num_agents * _num_markets)
     start += _num_agents * _num_markets
     fixed_cost_slice = slice(start, start + _num_agents * _num_markets)
@@ -100,14 +105,19 @@ def _compute_obs_scale(observation: np.ndarray) -> None:
 def reset_observation_normalization(config_path: Optional[str] = None) -> None:
     """Reset normalization so it will be recomputed on next call to simulate."""
     global _obs_scale, _slices_initialized, _num_agents, _num_markets
+    global _num_possible_capabilities
     _obs_scale = None
     _slices_initialized = False
+    _num_agents = None
+    _num_markets = None
+    _num_possible_capabilities = None
     if config_path is not None:
         with open(config_path, "r") as f:
             cfg = json.load(f)
         _num_agents = len(cfg.get("control_agents", [])) + len(cfg.get("ai_agents", []))
         econ = cfg.get("default_economy_parameters", {})
         _num_markets = econ.get("total_markets")
+        _num_possible_capabilities = econ.get("possible_capabilities")
 
 
 def simulate(path, obs: tuple):
