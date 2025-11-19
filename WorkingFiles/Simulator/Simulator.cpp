@@ -635,7 +635,7 @@ void Simulator::perform_micro_step_helper(const vector<Action>& vecActions) {
 
     // Record capital changes in the history
     for (auto pair : mapFirmIDToCapitalChange) {
-        if (pair.second != 0.0) {
+        if (!MiscUtils::nearly_equal(pair.second, 0.0)) {
             int iFirmID = pair.first;
             auto pFirm = mapFirmIDToFirmPtr.at(iFirmID);
             double dbCapital = pFirm->getDbCapital();
@@ -855,7 +855,7 @@ void Simulator::recompute_entry_and_fixed_costs_for_firm(Firm* firmPtr) {
 
         auto pairFirmMarket = std::make_pair(firmPtr->getFirmID(), market.get_market_id());
         double dbPriorEntryCost = dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket);
-        if (dbEntryCost != dbPriorEntryCost) {
+        if (!MiscUtils::nearly_equal(dbEntryCost, dbPriorEntryCost)) {
             dataCache.mapFirmMarketComboToEntryCost.at(pairFirmMarket) = dbEntryCost;
             currentSimulationHistoryPtr->record_entry_cost_change(iCurrentMicroTimeStep,
                                                                   dbEntryCost, pairFirmMarket.first, pairFirmMarket.second);
@@ -865,7 +865,7 @@ void Simulator::recompute_entry_and_fixed_costs_for_firm(Firm* firmPtr) {
             double dbFixedCostAsPctOfEntryCost = market.getFixedCostAsPercentageOfEntryCost() * 0.01;
             double dbFixedCost = dbEntryCost * dbFixedCostAsPctOfEntryCost;
             double dbPriorFixedCost = dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket);
-            if (dbFixedCost != dbPriorFixedCost) {
+            if (!MiscUtils::nearly_equal(dbFixedCost, dbPriorFixedCost)) {
                 dataCache.mapFirmMarketComboToFixedCost.at(pairFirmMarket) = dbFixedCost;
                 currentSimulationHistoryPtr->record_fixed_cost_change(iCurrentMicroTimeStep,
                                                                       dbFixedCost, pairFirmMarket.first, pairFirmMarket.second);
@@ -1310,14 +1310,14 @@ void Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) 
             pMapFirmIDToCapitalChange->at(iFirmID) += dbProfit;
 
             // Update revenue in the history and data cache if needed
-            if (dbRevenue != dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket)) {
+            if (!MiscUtils::nearly_equal(dbRevenue, dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket))) {
                 currentSimulationHistoryPtr->record_revenue_change(iCurrentMicroTimeStep, dbRevenue,
                                                                    pairFirmMarket.first, pairFirmMarket.second);
                 dataCache.mapFirmMarketComboToRevenue.at(pairFirmMarket) = dbRevenue;
             }
 
             // Update production quantities in the history and data cache if needed
-            if (q != dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket)) {
+            if (!MiscUtils::nearly_equal(q, dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket))) {
                 currentSimulationHistoryPtr->record_production_quantity_change(iCurrentMicroTimeStep, q,
                                                                               pairFirmMarket.first, pairFirmMarket.second);
                 dataCache.mapFirmMarketComboToQtyProduced.at(pairFirmMarket) = q;
@@ -1326,7 +1326,7 @@ void Simulator::distribute_profits(map<int, double>* pMapFirmIDToCapitalChange) 
             // Update prices in the history and data cache if needed
             // Note: Yes, there is only one price per market for now, but we record price changes according to firm-
             // market combinations in case we want to change the simulator to allow for intra-market price variation.
-            if (P != dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket)) {
+            if (!MiscUtils::nearly_equal(P, dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket))) {
                 currentSimulationHistoryPtr->record_price_change(iCurrentMicroTimeStep, P,
                                                                  pairFirmMarket.first, pairFirmMarket.second);
                 dataCache.mapFirmMarketComboToPrice.at(pairFirmMarket) = P;

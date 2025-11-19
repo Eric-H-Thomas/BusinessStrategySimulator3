@@ -56,6 +56,10 @@ int MiscUtils::choose_index_given_probabilities(const std::vector<double>& proba
     throw std::runtime_error("choose_index_given_probabilities: unable to choose an index");
 }
 
+bool MiscUtils::nearly_equal(double lhs, double rhs, double epsilon) {
+    return std::fabs(lhs - rhs) <= epsilon;
+}
+
 
 // Dot product of two vectors of doubles
 [[maybe_unused]] double MiscUtils::dot_product(const std::vector<double>& vector1, const std::vector<double>& vector2) {
