@@ -70,6 +70,7 @@ public:
     int get_num_total_agents();
     bool at_beginning_of_macro_step();
     int get_num_markets();
+    int get_num_possible_capabilities();
     string strResultsDir;
 
 private:

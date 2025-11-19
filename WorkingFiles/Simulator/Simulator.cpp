@@ -1351,6 +1351,10 @@ int Simulator::get_num_markets() {
     return economy.get_total_markets();
 }
 
+int Simulator::get_num_possible_capabilities() {
+    return economy.get_num_possible_capabilities();
+}
+
 set<int> Simulator::get_firm_IDs_in_market(const Market& market) {
     set<int> setFirmIDs;
     for (auto pair : mapFirmIDToFirmPtr) {

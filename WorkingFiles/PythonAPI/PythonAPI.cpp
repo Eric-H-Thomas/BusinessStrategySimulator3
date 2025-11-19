@@ -97,3 +97,7 @@ int PythonAPI::get_num_markets() {
 int PythonAPI::get_num_agents() {
     return simulator.get_num_total_agents();
 }
+
+int PythonAPI::get_num_possible_capabilities() {
+    return simulator.get_num_possible_capabilities();
+}
