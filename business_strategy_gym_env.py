@@ -198,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=Path,
-        default=base_dir / "WorkingFiles" / "Config" / "default.json",
+        default=base_dir / "WorkingFiles" / "Config" / "TestBench" / "DefaultEconomy.json",
         help="Path to the simulator configuration file.",
     )
     parser.add_argument(
