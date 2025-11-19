@@ -15,5 +15,6 @@ PYBIND11_MODULE(simulator_module, m) {
             .def("reset", &PythonAPI::reset)
             .def("close", &PythonAPI::close)
             .def("get_num_markets", &PythonAPI::get_num_markets)
-            .def("get_num_agents", &PythonAPI::get_num_agents);
+            .def("get_num_agents", &PythonAPI::get_num_agents)
+            .def("get_num_possible_capabilities", &PythonAPI::get_num_possible_capabilities);
 }

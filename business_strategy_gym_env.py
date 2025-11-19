@@ -17,6 +17,7 @@ class BusinessStrategyEnv(gym.Env):
 
         self.num_agents = self.python_API.get_num_agents()
         self.num_markets = self.python_API.get_num_markets()
+        self.num_possible_capabilities = self.python_API.get_num_possible_capabilities()
         self.normalize_obs = normalize_observations
 
         # Pre-compute slices for each observation component
@@ -25,6 +26,10 @@ class BusinessStrategyEnv(gym.Env):
         start += self.num_agents
         self.overlap_slice = slice(start, start + self.num_markets**2)
         start += self.num_markets**2
+        self.shareability_slice = slice(
+            start, start + self.num_possible_capabilities
+        )
+        start += self.num_possible_capabilities
         self.variable_cost_slice = slice(start, start + self.num_agents * self.num_markets)
         start += self.num_agents * self.num_markets
         self.fixed_cost_slice = slice(start, start + self.num_agents * self.num_markets)
@@ -60,6 +65,10 @@ class BusinessStrategyEnv(gym.Env):
             # Market overlap structure
             obs_low = np.append(obs_low, np.zeros(self.num_markets**2))
             obs_high = np.append(obs_high, np.ones(self.num_markets**2))
+
+            # Capability shareability values
+            obs_low = np.append(obs_low, np.zeros(self.num_possible_capabilities))
+            obs_high = np.append(obs_high, np.ones(self.num_possible_capabilities))
 
             # Variable costs for all firm-market combinations
             obs_low = np.append(obs_low, np.zeros(self.num_agents * self.num_markets))

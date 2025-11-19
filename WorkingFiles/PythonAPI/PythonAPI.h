@@ -25,6 +25,7 @@ public:
     // Helper functions for defining the state and action spaces
     int get_num_markets();
     int get_num_agents();
+    int get_num_possible_capabilities();
 
 private:
     tuple<vector<double>, double, bool, bool> step_helper();
