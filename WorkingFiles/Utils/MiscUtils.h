@@ -15,6 +15,8 @@ class MiscUtils {
 public:
     static int choose_index_given_probabilities(const vector<double>& probabilities);
 
+    static bool nearly_equal(double lhs, double rhs, double epsilon = 1e-9);
+
     [[maybe_unused]] static double dot_product(const vector<double>& vector1, const vector<double>& vector2);
     static int dot_product(const vector<int>& vector1, const vector<int>& vector2);
     static double dot_product(const vector<int>& vector1, const vector<double>& vector2);
