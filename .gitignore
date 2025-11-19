@@ -49,3 +49,4 @@
 *.pyc
 WorkingFiles/.DS_Store
 .DS_Store
+*.csv
