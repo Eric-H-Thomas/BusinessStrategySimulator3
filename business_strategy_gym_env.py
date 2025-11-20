@@ -312,7 +312,7 @@ if __name__ == "__main__":
         "--eval-episodes",
         dest="eval_episodes",
         type=int,
-        default=100,
+        default=10000,
         help="Number of evaluation episodes to run after training completes (0 to disable).",
     )
     parser.add_argument(
