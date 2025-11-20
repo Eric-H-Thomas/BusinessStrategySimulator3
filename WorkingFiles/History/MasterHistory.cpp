@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <stdexcept>
+#include <filesystem>
 
 using std::string;
 using std::cout;
@@ -21,6 +22,8 @@ SimulationHistory* MasterHistory::getCurrentSimulationHistoryPtr() {
 
 void MasterHistory::generate_master_output() {
     cout << "Generating master output file." << endl;
+
+    ensure_output_directory_exists();
 
     std::ofstream ofStreamMasterOutput;
     string strPath = this->strMasterHistoryOutputPath + "/MasterOutput.csv";
@@ -75,6 +78,8 @@ void MasterHistory::generate_master_output() {
 void MasterHistory::generate_market_overlap_file() {
     cout << "Generating market overlap file." << endl;
 
+    ensure_output_directory_exists();
+
     std::ofstream ofStreamMarketOverlap;
     string strPath = this->strMasterHistoryOutputPath + "/MarketOverlap.csv";
     ofStreamMarketOverlap.open(strPath);
@@ -119,6 +124,15 @@ void MasterHistory::generate_market_overlap_file() {
     }
 
     ofStreamMarketOverlap.close();
+}
+
+void MasterHistory::ensure_output_directory_exists() const {
+    try {
+        std::filesystem::create_directories(this->strMasterHistoryOutputPath);
+    }
+    catch (const std::filesystem::filesystem_error& e) {
+        throw std::runtime_error("Failed to create results directory: " + this->strMasterHistoryOutputPath + ". " + e.what());
+    }
 }
 
 void MasterHistory::prepare_data_for_output() {
