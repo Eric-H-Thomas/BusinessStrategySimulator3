@@ -30,6 +30,7 @@ public:
     string strMasterHistoryOutputPath;
 
 private:
+    void ensure_output_directory_exists() const;
     [[nodiscard]] int get_row_number(int iCurrentSim, int iCurrentFirm, int iCurrentMarket, int iCurrentMicroStep) const;
     void fill_in_identifier_info();
     void fill_in_capital_info();
