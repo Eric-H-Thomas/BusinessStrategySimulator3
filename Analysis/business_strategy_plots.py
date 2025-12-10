@@ -764,10 +764,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Business strategy plotting utilities")
     parser.add_argument("--zip-path", type=Path, required=True, help="Path to the ZIP file containing the output data")
     parser.add_argument("--master-output-file-name", required=True, help="Name of master output CSV file inside the ZIP")
+    parser.add_argument("--market-overlap-file-name", required=True, help="Name of market overlap CSV file inside the ZIP")
     parser.add_argument(
         "--various-sophisticated-agent-types",
         action="store_true",
         help="Use this flag if the data contain multiple sophisticated agent types."
+    )
+    parser.add_argument(
+        "--plot-heatmaps",
+        action="store_true",
+        help="Use this flag if you want to plot heat maps in addition to the core plots."
     )
     args = parser.parse_args()
 
@@ -799,12 +805,12 @@ def main() -> None:
         print(f"{agent_type}: {norm_value:.2f} (relative growth)")
 
     # Heatmap utilities require additional overlap data and are not executed by default.
-    # Example usage:
-    # zip_filename = Path("MarketOverlapVarious.zip")
-    # output = load_data(zip_filename, "MasterOutputVaryingAgentTypes4Random.csv")
-    # plot_market_agent_type_heatmap(output, step_interval=5)
-    # plot_firm_market_heatmap(output, step_interval=5)
-    # plot_market_firm_heatmap(output, step_interval=5)
+    if args.plot_heatmaps:
+        zip_filename = Path(args.zip_path)
+        output = load_data(zip_filename, args.master_output_file_name)
+        plot_market_agent_type_heatmap(output, step_interval=5)
+        plot_firm_market_heatmap(output, step_interval=5)
+        plot_market_firm_heatmap(output, step_interval=5)
 
 if __name__ == "__main__":
     main()
