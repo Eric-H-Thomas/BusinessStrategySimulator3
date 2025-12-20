@@ -128,7 +128,11 @@ def main() -> None:
         default=base_dir / "scripts" / "submit_slurm_training_job.sh",
         help="Path to the helper that generates the sbatch file.",
     )
-    parser.add_argument("--time", help="Requested walltime for each job (e.g., 04:00:00).")
+    parser.add_argument(
+        "--time",
+        default="23:00:00",
+        help="Requested walltime for each job (e.g., 04:00:00).",
+    )
     parser.add_argument("--partition", help="SLURM partition/queue name.")
     parser.add_argument("--account", help="SLURM account to charge.")
     parser.add_argument("--qos", help="QoS name to request.")
@@ -139,7 +143,12 @@ def main() -> None:
         dest="cpus_per_task",
         help="CPUs per task.",
     )
-    parser.add_argument("--mem", dest="memory", help="Memory request (e.g., 16G).")
+    parser.add_argument(
+        "--mem",
+        dest="memory",
+        default="16G",
+        help="Memory request (e.g., 16G).",
+    )
     parser.add_argument("--gres", help="Generic resource request (e.g., gpu:1).")
     parser.add_argument("--dependency", help="SLURM dependency specification.")
     parser.add_argument(

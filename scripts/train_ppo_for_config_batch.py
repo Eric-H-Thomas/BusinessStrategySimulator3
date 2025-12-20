@@ -140,6 +140,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--time",
+        default="23:00:00",
         help="Requested walltime for each job (e.g., 04:00:00).",
     )
     parser.add_argument("--partition", help="SLURM partition/queue name.")
@@ -152,7 +153,12 @@ def main() -> None:
         dest="cpus_per_task",
         help="CPUs per task.",
     )
-    parser.add_argument("--mem", dest="memory", help="Memory request (e.g., 16G).")
+    parser.add_argument(
+        "--mem",
+        dest="memory",
+        default="16G",
+        help="Memory request (e.g., 16G).",
+    )
     parser.add_argument("--gres", help="Generic resource request (e.g., gpu:1).")
     parser.add_argument("--dependency", help="SLURM dependency specification.")
     parser.add_argument(
