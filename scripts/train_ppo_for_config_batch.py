@@ -200,55 +200,55 @@ def main() -> None:
         "--learning-rate",
         dest="learning_rate",
         type=float,
-        default=3e-4,
+        default=1e-4,
         help="Learning rate passed to PPO.",
     )
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.999,
+        default=0.995,
         help="Discount factor for future rewards.",
     )
     parser.add_argument(
         "--gae-lambda",
         dest="gae_lambda",
         type=float,
-        default=0.95,
+        default=0.9,
         help="Generalized Advantage Estimation lambda parameter.",
     )
     parser.add_argument(
         "--clip-range",
         dest="clip_range",
         type=float,
-        default=0.2,
+        default=0.25,
         help="Clipping range for the PPO policy objective.",
     )
     parser.add_argument(
         "--ent-coef",
         dest="ent_coef",
         type=float,
-        default=0.0,
+        default=0.01,
         help="Entropy bonus coefficient.",
     )
     parser.add_argument(
         "--vf-coef",
         dest="vf_coef",
         type=float,
-        default=0.5,
+        default=1.0,
         help="Value function loss coefficient.",
     )
     parser.add_argument(
         "--n-steps",
         dest="n_steps",
         type=int,
-        default=512,
+        default=1024,
         help="Rollout length (environment steps) collected before each PPO update.",
     )
     parser.add_argument(
         "--batch-size",
         dest="batch_size",
         type=int,
-        default=64,
+        default=256,
         help="Mini-batch size used during gradient updates.",
     )
 
