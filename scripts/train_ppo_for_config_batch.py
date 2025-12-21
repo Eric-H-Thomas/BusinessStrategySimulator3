@@ -136,10 +136,15 @@ def main() -> None:
         help="Prefix used when naming SLURM jobs.",
     )
     parser.add_argument(
-        "--num-agents-per-shareability-level",
+        "--num-agents-per-config-file",
         type=int,
         default=10,
-        help="Number of independent training runs to launch per shareability level.",
+        help="Number of independent training runs to launch per config file.",
+    )
+    parser.add_argument(
+        "--shareability-test",
+        action="store_true",
+        help="Generate shareability summary CSV and boxplot after training.",
     )
     parser.add_argument(
         "--submit-script",
@@ -297,7 +302,7 @@ def main() -> None:
         shareability_dir = output_dir / f"{index:03d}_{config_path.stem}"
         shareability_dir.mkdir(parents=True, exist_ok=True)
 
-        for agent_index in range(args.num_agents_per_shareability_level):
+        for agent_index in range(args.num_agents_per_config_file):
             run_dir = shareability_dir / f"agent_{agent_index:02d}"
             run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -305,7 +310,6 @@ def main() -> None:
 
             metadata = dict(hyperparameters)
             metadata["config_source"] = str(config_path.resolve())
-            metadata["shareability_level"] = config_path.stem
             metadata["agent_index"] = agent_index
             (run_dir / "hyperparameters.json").write_text(
                 json.dumps(metadata, indent=2)
@@ -344,23 +348,24 @@ def main() -> None:
     if args.dry_run:
         print("Dry run complete; inspect the generated sbatch scripts before submitting.")
     else:
-        total_jobs = len(configs) * args.num_agents_per_shareability_level
+        total_jobs = len(configs) * args.num_agents_per_config_file
         print(f"Submitted {total_jobs} jobs via {args.submit_script}.")
 
-    metrics = collect_mean_rewards(output_dir)
-    if not metrics:
-        print(
-            "No evaluation_metrics.json files found. "
-            "Run this script again after training completes to generate plots."
-        )
-        return
+    if args.shareability_test:
+        metrics = collect_mean_rewards(output_dir)
+        if not metrics:
+            print(
+                "No evaluation_metrics.json files found. "
+                "Run this script again after training completes to generate plots."
+            )
+            return
 
-    csv_path = output_dir / "shareability_mean_rewards.csv"
-    write_mean_reward_csv(metrics, csv_path)
-    plot_path = output_dir / "shareability_mean_rewards_boxplot.png"
-    write_mean_reward_boxplot(metrics, plot_path)
-    print(f"Wrote mean reward CSV to {csv_path}")
-    print(f"Wrote box-and-whisker plot to {plot_path}")
+        csv_path = output_dir / "shareability_mean_rewards.csv"
+        write_mean_reward_csv(metrics, csv_path)
+        plot_path = output_dir / "shareability_mean_rewards_boxplot.png"
+        write_mean_reward_boxplot(metrics, plot_path)
+        print(f"Wrote mean reward CSV to {csv_path}")
+        print(f"Wrote box-and-whisker plot to {plot_path}")
 
 
 def collect_mean_rewards(output_dir: Path) -> List[Tuple[int, str, float]]:
