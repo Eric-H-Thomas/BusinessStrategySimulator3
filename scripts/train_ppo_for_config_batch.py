@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import shlex
 import subprocess
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Tuple
+
+import matplotlib.pyplot as plt
 
 
 def _collect_config_files(config_dir: Path) -> List[Path]:
@@ -131,6 +134,12 @@ def main() -> None:
         "--job-name-prefix",
         default="ppo-config",
         help="Prefix used when naming SLURM jobs.",
+    )
+    parser.add_argument(
+        "--num-agents-per-shareability-level",
+        type=int,
+        default=10,
+        help="Number of independent training runs to launch per shareability level.",
     )
     parser.add_argument(
         "--submit-script",
@@ -285,49 +294,137 @@ def main() -> None:
     }
 
     for index, config_path in enumerate(configs):
-        run_dir = output_dir / f"{index:03d}_{config_path.stem}"
-        run_dir.mkdir(parents=True, exist_ok=True)
+        shareability_dir = output_dir / f"{index:03d}_{config_path.stem}"
+        shareability_dir.mkdir(parents=True, exist_ok=True)
 
-        output_path = run_dir / "Agent.zip"
+        for agent_index in range(args.num_agents_per_shareability_level):
+            run_dir = shareability_dir / f"agent_{agent_index:02d}"
+            run_dir.mkdir(parents=True, exist_ok=True)
 
-        metadata = dict(hyperparameters)
-        metadata["config_source"] = str(config_path.resolve())
-        (run_dir / "hyperparameters.json").write_text(json.dumps(metadata, indent=2))
+            output_path = run_dir / "Agent.zip"
 
-        config_data = json.loads(config_path.read_text())
-        sim_params = config_data.setdefault("simulation_parameters", {})
-        sim_params["results_dir"] = str(run_dir.resolve())
-        for agent in config_data.get("ai_agents", []):
-            agent["path_to_agent"] = str(output_path.resolve())
+            metadata = dict(hyperparameters)
+            metadata["config_source"] = str(config_path.resolve())
+            metadata["shareability_level"] = config_path.stem
+            metadata["agent_index"] = agent_index
+            (run_dir / "hyperparameters.json").write_text(
+                json.dumps(metadata, indent=2)
+            )
 
-        run_config_path = run_dir / "config.json"
-        run_config_path.write_text(json.dumps(config_data, indent=2))
+            config_data = json.loads(config_path.read_text())
+            sim_params = config_data.setdefault("simulation_parameters", {})
+            sim_params["results_dir"] = str(run_dir.resolve())
+            for agent in config_data.get("ai_agents", []):
+                agent["path_to_agent"] = str(output_path.resolve())
 
-        extra_training_args: List[str] = []
-        for key, value in hyperparameters.items():
-            option = f"--{key.replace('_', '-')}"
-            extra_training_args.extend([option, str(value)])
+            run_config_path = run_dir / "config.json"
+            run_config_path.write_text(json.dumps(config_data, indent=2))
 
-        job_name = f"{args.job_name_prefix}-{index:03d}"
+            extra_training_args: List[str] = []
+            for key, value in hyperparameters.items():
+                option = f"--{key.replace('_', '-')}"
+                extra_training_args.extend([option, str(value)])
 
-        cmd = build_submit_command(
-            args.submit_script,
-            args,
-            job_name,
-            output_path,
-            run_config_path,
-            extra_training_args,
-        )
+            job_name = f"{args.job_name_prefix}-{index:03d}-a{agent_index:02d}"
 
-        quoted = " ".join(shlex.quote(part) for part in cmd)
-        print(f"[config {index:03d}] {quoted}")
+            cmd = build_submit_command(
+                args.submit_script,
+                args,
+                job_name,
+                output_path,
+                run_config_path,
+                extra_training_args,
+            )
 
-        subprocess.run(cmd, check=True)
+            quoted = " ".join(shlex.quote(part) for part in cmd)
+            print(f"[config {index:03d} agent {agent_index:02d}] {quoted}")
+
+            subprocess.run(cmd, check=True)
 
     if args.dry_run:
         print("Dry run complete; inspect the generated sbatch scripts before submitting.")
     else:
-        print(f"Submitted {len(configs)} jobs via {args.submit_script}.")
+        total_jobs = len(configs) * args.num_agents_per_shareability_level
+        print(f"Submitted {total_jobs} jobs via {args.submit_script}.")
+
+    metrics = collect_mean_rewards(output_dir)
+    if not metrics:
+        print(
+            "No evaluation_metrics.json files found. "
+            "Run this script again after training completes to generate plots."
+        )
+        return
+
+    csv_path = output_dir / "shareability_mean_rewards.csv"
+    write_mean_reward_csv(metrics, csv_path)
+    plot_path = output_dir / "shareability_mean_rewards_boxplot.png"
+    write_mean_reward_boxplot(metrics, plot_path)
+    print(f"Wrote mean reward CSV to {csv_path}")
+    print(f"Wrote box-and-whisker plot to {plot_path}")
+
+
+def collect_mean_rewards(output_dir: Path) -> List[Tuple[int, str, float]]:
+    """Collect mean rewards from evaluation metrics files under the output directory."""
+    results: List[Tuple[int, str, float]] = []
+    for metrics_path in output_dir.rglob("evaluation_metrics.json"):
+        try:
+            data = json.loads(metrics_path.read_text())
+        except json.JSONDecodeError:
+            print(f"Skipping invalid JSON: {metrics_path}")
+            continue
+
+        mean_reward = data.get("mean_reward")
+        if mean_reward is None:
+            print(f"Skipping metrics without mean_reward: {metrics_path}")
+            continue
+
+        group_dir = metrics_path.parent.parent
+        index, shareability = parse_shareability_dir(group_dir.name)
+        results.append((index, shareability, float(mean_reward)))
+    return results
+
+
+def parse_shareability_dir(name: str) -> Tuple[int, str]:
+    """Parse a shareability directory name like '000_HighShareability'."""
+    prefix, _, remainder = name.partition("_")
+    if prefix.isdigit() and remainder:
+        return int(prefix), remainder
+    return 9999, name
+
+
+def write_mean_reward_csv(
+    metrics: List[Tuple[int, str, float]], output_path: Path
+) -> None:
+    """Write per-run mean rewards to CSV."""
+    metrics_sorted = sorted(metrics, key=lambda item: (item[0], item[1]))
+    with output_path.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["shareability_level", "mean_reward"])
+        for _, shareability, mean_reward in metrics_sorted:
+            writer.writerow([shareability, mean_reward])
+
+
+def write_mean_reward_boxplot(
+    metrics: List[Tuple[int, str, float]], output_path: Path
+) -> None:
+    """Create a box-and-whisker plot for mean rewards per shareability level."""
+    grouped: Dict[Tuple[int, str], List[float]] = {}
+    for index, shareability, mean_reward in metrics:
+        grouped.setdefault((index, shareability), []).append(mean_reward)
+
+    ordered = sorted(grouped.items(), key=lambda item: (item[0][0], item[0][1]))
+    labels = [shareability for (_, shareability), _ in ordered]
+    data = [values for _, values in ordered]
+
+    plt.figure(figsize=(12, 6))
+    plt.boxplot(data, labels=labels, patch_artist=True)
+    plt.xlabel("Shareability level")
+    plt.ylabel("Mean reward")
+    plt.title("Mean reward distribution by shareability level")
+    plt.xticks(rotation=30, ha="right")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
 
 
 if __name__ == "__main__":
