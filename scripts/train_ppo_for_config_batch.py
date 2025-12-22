@@ -452,7 +452,25 @@ def write_mean_reward_boxplot(
     for index, shareability, mean_reward in metrics:
         grouped.setdefault((index, shareability), []).append(mean_reward)
 
-    ordered = sorted(grouped.items(), key=lambda item: (item[0][0], item[0][1]))
+    shareability_order = [
+        "NoShareability",
+        "LowConstantShareability",
+        "LowVaryingShareability",
+        "ModerateConstantShareability",
+        "ModerateVaryingShareability",
+        "HighConstantShareability",
+        "HighVaryingShareability",
+        "PerfectShareability",
+    ]
+    order_index = {name: position for position, name in enumerate(shareability_order)}
+    ordered = sorted(
+        grouped.items(),
+        key=lambda item: (
+            order_index.get(item[0][1], len(order_index)),
+            item[0][0],
+            item[0][1],
+        ),
+    )
     labels = [shareability for (_, shareability), _ in ordered]
     data = [values for _, values in ordered]
 
