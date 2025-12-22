@@ -266,9 +266,10 @@ def main() -> None:
                 metadata_path = run_dir / "hyperparameters.json"
                 combo_with_algo = dict(combo)
                 combo_with_algo["algorithm"] = "ppo"
-                combo_with_algo["combo_id"] = combo_id
-                combo_with_algo["agent_index"] = agent_index
-                metadata_path.write_text(json.dumps(combo_with_algo, indent=2))
+                metadata = dict(combo_with_algo)
+                metadata["combo_id"] = combo_id
+                metadata["agent_index"] = agent_index
+                metadata_path.write_text(json.dumps(metadata, indent=2))
 
                 output_path = run_dir / "Agent.zip"
                 run_results_dir = run_dir.resolve()
