@@ -109,7 +109,6 @@ def main() -> None:
     parser.add_argument(
         "--config-dir",
         type=Path,
-        required=True,
         help="Directory that contains the simulator configuration JSON files.",
     )
     parser.add_argument(
@@ -145,6 +144,14 @@ def main() -> None:
         "--shareability-test",
         action="store_true",
         help="Generate shareability summary CSV and boxplot after training.",
+    )
+    parser.add_argument(
+        "--analysis-only",
+        type=Path,
+        help=(
+            "Path to a directory to search for evaluation_metrics.json files "
+            "and generate shareability summaries without submitting jobs."
+        ),
     )
     parser.add_argument(
         "--submit-script",
@@ -273,6 +280,34 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if args.analysis_only is not None:
+        analysis_dir = args.analysis_only.resolve()
+        if not analysis_dir.exists():
+            raise FileNotFoundError(f"Analysis directory does not exist: {analysis_dir}")
+        if not analysis_dir.is_dir():
+            raise NotADirectoryError(
+                f"Analysis path is not a directory: {analysis_dir}"
+            )
+
+        metrics = collect_mean_rewards(analysis_dir)
+        if not metrics:
+            print(
+                "No evaluation_metrics.json files found. "
+                "Check the analysis path and try again."
+            )
+            return
+
+        csv_path = analysis_dir / "shareability_mean_rewards.csv"
+        write_mean_reward_csv(metrics, csv_path)
+        plot_path = analysis_dir / "shareability_mean_rewards_boxplot.png"
+        write_mean_reward_boxplot(metrics, plot_path)
+        print(f"Wrote mean reward CSV to {csv_path}")
+        print(f"Wrote box-and-whisker plot to {plot_path}")
+        return
+
+    if args.config_dir is None:
+        raise ValueError("--config-dir is required unless --analysis-only is set.")
 
     config_dir = args.config_dir.resolve()
     output_dir = args.output_dir.resolve()
