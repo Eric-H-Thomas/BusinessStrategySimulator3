@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aggregate hyperparameter sweep results into a single CSV summary."""
+"""Aggregate hyperparameter sweep results into per-run and per-combo CSVs."""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ import math
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -28,15 +28,15 @@ def gather_run_rows(run_dir: Path) -> Optional[Dict[str, Any]]:
     if not hyper_path.exists():
         return None
 
-    row: Dict[str, Any] = {"run": run_dir.name}
+    row: Dict[str, Any] = {"run": str(run_dir)}
     hyperparameters = load_json(hyper_path)
     row.update({str(key): hyperparameters[key] for key in sorted(hyperparameters)})
 
     if eval_path.exists():
         evaluation = load_json(eval_path)
-        for key, value in evaluation.items():
-            if isinstance(value, (int, float, str)):
-                row[f"eval_{key}"] = value
+        mean_reward = evaluation.get("mean_reward")
+        if isinstance(mean_reward, (int, float)):
+            row["mean_reward"] = mean_reward
     else:
         row["status"] = "missing_evaluation"
 
@@ -114,6 +114,43 @@ def write_csv(rows: List[Dict[str, Any]], output_path: Path) -> None:
             writer.writerow(normalised_row)
 
 
+def iter_run_dirs(root_dir: Path) -> Iterable[Path]:
+    for hyper_path in root_dir.rglob("hyperparameters.json"):
+        run_dir = hyper_path.parent
+        if run_dir.is_dir():
+            yield run_dir
+
+
+def _combo_group_key(row: Dict[str, Any]) -> Tuple[Tuple[str, Any], ...]:
+    excluded = {"run", "agent_index", "combo_id", "status", "mean_reward"}
+    items = tuple(
+        (key, row[key])
+        for key in sorted(row.keys())
+        if key not in excluded and not key.startswith("eval_")
+    )
+    return items
+
+
+def summarise_by_combo(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    grouped: Dict[Tuple[Tuple[str, Any], ...], List[float]] = {}
+    for row in rows:
+        mean_reward = row.get("mean_reward")
+        if not isinstance(mean_reward, (int, float)):
+            continue
+        key = _combo_group_key(row)
+        grouped.setdefault(key, []).append(float(mean_reward))
+
+    summary_rows: List[Dict[str, Any]] = []
+    for key, rewards in grouped.items():
+        if not rewards:
+            continue
+        combo_row = {k: v for k, v in key}
+        combo_row["mean_reward_avg"] = sum(rewards) / len(rewards)
+        combo_row["num_runs"] = len(rewards)
+        summary_rows.append(combo_row)
+
+    return summary_rows
+
 
 def cleanup_slurm_jobs(slurm_jobs_dir: Path) -> None:
     """Remove generated SLURM job scripts so future sweeps start clean."""
@@ -158,7 +195,15 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        help="Where to write the aggregated CSV (default: <input-dir>/summary.csv).",
+        help="Where to write the per-run CSV (default: <input-dir>/summary.csv).",
+    )
+    parser.add_argument(
+        "--combo-output",
+        type=Path,
+        help=(
+            "Where to write the per-combo averaged CSV "
+            "(default: <input-dir>/summary_by_combo.csv)."
+        ),
     )
     parser.add_argument(
         "--slurm-jobs-dir",
@@ -178,7 +223,7 @@ def main() -> None:
     if not input_dir.exists():
         raise FileNotFoundError(f"Sweep directory not found: {input_dir}")
 
-    run_dirs = sorted(path for path in input_dir.iterdir() if path.is_dir())
+    run_dirs = sorted(iter_run_dirs(input_dir))
     rows: List[Dict[str, Any]] = []
     for run_dir in run_dirs:
         row = gather_run_rows(run_dir)
@@ -189,6 +234,12 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     write_csv(rows, output_path)
     print(f"Wrote {len(rows)} rows to {output_path}")
+
+    combo_rows = summarise_by_combo(rows)
+    combo_output_path = args.combo_output or (input_dir / "summary_by_combo.csv")
+    combo_output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_csv(combo_rows, combo_output_path)
+    print(f"Wrote {len(combo_rows)} rows to {combo_output_path}")
 
     if not args.skip_cleanup:
         cleanup_slurm_jobs(args.slurm_jobs_dir)
