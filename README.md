@@ -57,8 +57,9 @@ action = simulate("AgentFiles/Agent.zip", observation)
 ## Batch training helpers
 
 * `scripts/train_ppo_for_config_batch.py` trains separate PPO policies for every `.json` configuration in a directory. Set `--config-dir` to the scenario folder and `--output-dir` to the destination for checkpoints.
-* `scripts/submit_slurm_training_job.sh` generates SLURM job scripts that activate the correct environment, export `PYTHONPATH`, and launch `business_strategy_gym_env.py`. Use `--dry-run` to preview the generated script.
-* Sweep utilities (`submit_slurm_ppo_sweep.py`, `submit_slurm_dqn_sweep.py`, `submit_slurm_a2c_sweep.py`, and `submit_all_sweeps.py`) expand search grids into per-run jobs and collect results. See [Hyperparameter sweep utilities](docs/hyperparameter_sweeps.md) for the full workflow.
+* `scripts/submit_slurm_training_job.sh` generates single-run SLURM job scripts that activate the correct environment, export `PYTHONPATH`, and launch `business_strategy_gym_env.py`.
+* `scripts/submit_slurm_training_array.sh` generates SLURM job arrays from a JSONL manifest so large sweeps can run under one array submission (use `--array-max-concurrent` to cap concurrent tasks).
+* Sweep utilities (`submit_slurm_ppo_sweep.py`, `submit_slurm_dqn_sweep.py`, `submit_slurm_a2c_sweep.py`, and `submit_all_sweeps.py`) expand search grids into per-run jobs and collect results via the array helper. See [Hyperparameter sweep utilities](docs/hyperparameter_sweeps.md) for the full workflow and exact commands.
 
 ## Project layout
 

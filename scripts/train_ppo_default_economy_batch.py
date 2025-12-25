@@ -7,27 +7,24 @@ import argparse
 import json
 import shlex
 import subprocess
+from datetime import datetime
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, List
 
 
-def build_submit_command(
+def build_array_submit_command(
     submit_script: Path,
     args: argparse.Namespace,
     job_name: str,
-    output_path: Path,
-    config_path: Path,
-    extra_training_args: Iterable[str],
+    manifest_path: Path,
 ) -> List[str]:
-    """Create the command used to submit a SLURM job for a single training run."""
+    """Create the command used to submit a SLURM array job for many training runs."""
 
     cmd: List[str] = [
         str(submit_script),
-        "--config",
-        str(config_path),
-        "--output",
-        str(output_path),
+        "--manifest",
+        str(manifest_path),
         "--num-updates",
         str(args.num_updates),
         "--num-envs",
@@ -65,16 +62,10 @@ def build_submit_command(
         cmd.append("--use-gpu")
     for extra in args.extra_sbatch:
         cmd.extend(["--extra-sbatch", extra])
+    if args.array_max_concurrent is not None:
+        cmd.extend(["--array-max-concurrent", str(args.array_max_concurrent)])
     if args.dry_run:
         cmd.append("--dry-run")
-
-    cmd.append("--")
-    cmd.extend(str(arg) for arg in extra_training_args)
-
-    if args.disable_obs_normalization:
-        cmd.append("--normalize_obs")
-    if args.disable_reward_normalization:
-        cmd.append("--normalize_reward")
 
     return cmd
 
@@ -125,8 +116,8 @@ def main() -> None:
     parser.add_argument(
         "--submit-script",
         type=Path,
-        default=base_dir / "scripts" / "submit_slurm_training_job.sh",
-        help="Path to the helper that generates the sbatch file.",
+        default=base_dir / "scripts" / "submit_slurm_training_array.sh",
+        help="Path to the helper that generates the array sbatch file.",
     )
     parser.add_argument(
         "--time",
@@ -171,6 +162,12 @@ def main() -> None:
         "--job-script-dir",
         type=Path,
         help="Directory where generated sbatch scripts should be stored.",
+    )
+    parser.add_argument(
+        "--array-max-concurrent",
+        type=int,
+        default=50,
+        help="Maximum number of array tasks to run concurrently.",
     )
     parser.add_argument(
         "--use-gpu",
@@ -276,6 +273,8 @@ def main() -> None:
         "batch_size": args.batch_size,
     }
 
+    manifest_entries: List[Dict[str, object]] = []
+
     for index in range(args.num_agents):
         run_dir = output_dir / f"{index:03d}_DefaultEconomy"
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -300,26 +299,45 @@ def main() -> None:
             option = f"--{key.replace('_', '-')}"
             extra_training_args.extend([option, str(value)])
 
-        job_name = f"{args.job_name_prefix}-{index:03d}"
+        if args.disable_obs_normalization:
+            extra_training_args.append("--normalize_obs")
+        if args.disable_reward_normalization:
+            extra_training_args.append("--normalize_reward")
 
-        cmd = build_submit_command(
-            args.submit_script,
-            args,
-            job_name,
-            output_path,
-            run_config_path,
-            extra_training_args,
+        manifest_entries.append(
+            {
+                "config": str(run_config_path),
+                "output": str(output_path),
+                "extra_args": extra_training_args,
+                "num_updates": args.num_updates,
+                "num_envs": args.num_envs,
+            }
         )
+        print(f"[agent {index:03d}] queued for array submission")
 
-        quoted = " ".join(shlex.quote(part) for part in cmd)
-        print(f"[agent {index:03d}] {quoted}")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    manifest_path = output_dir / f"{args.job_name_prefix}_manifest_{timestamp}.jsonl"
+    with manifest_path.open("w") as handle:
+        for entry in manifest_entries:
+            handle.write(json.dumps(entry))
+            handle.write("\n")
 
-        subprocess.run(cmd, check=True)
+    array_job_name = f"{args.job_name_prefix}-array"
+    cmd = build_array_submit_command(
+        args.submit_script,
+        args,
+        array_job_name,
+        manifest_path,
+    )
+
+    quoted = " ".join(shlex.quote(part) for part in cmd)
+    print(f"Submitting array job with {args.num_agents} tasks: {quoted}")
+    subprocess.run(cmd, check=True)
 
     if args.dry_run:
-        print("Dry run complete; inspect the generated sbatch scripts before submitting.")
+        print("Dry run complete; inspect the generated sbatch script before submitting.")
     else:
-        print(f"Submitted {args.num_agents} jobs via {args.submit_script}.")
+        print(f"Submitted {args.num_agents} array tasks via {args.submit_script}.")
 
 
 if __name__ == "__main__":
