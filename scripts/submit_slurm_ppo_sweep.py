@@ -8,6 +8,7 @@ import itertools
 import json
 import shlex
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
 
@@ -20,22 +21,18 @@ def cartesian_product(space: Dict[str, Sequence[object]]) -> Iterable[Dict[str, 
         yield dict(zip(keys, values))
 
 
-def build_submit_command(
+def build_array_submit_command(
     submit_script: Path,
     args: argparse.Namespace,
     job_name: str,
-    output_path: Path,
-    combo: Dict[str, object],
-    config_path: Path,
+    manifest_path: Path,
 ) -> List[str]:
-    """Create the command used to submit a SLURM job for a single configuration."""
+    """Create the command used to submit a SLURM array job for all configurations."""
 
     cmd: List[str] = [
         str(submit_script),
-        "--config",
-        str(config_path),
-        "--output",
-        str(output_path),
+        "--manifest",
+        str(manifest_path),
         "--num-updates",
         str(args.num_updates),
         "--num-envs",
@@ -73,18 +70,10 @@ def build_submit_command(
         cmd.append("--use-gpu")
     for extra in args.extra_sbatch:
         cmd.extend(["--extra-sbatch", extra])
+    if args.array_max_concurrent is not None:
+        cmd.extend(["--array-max-concurrent", str(args.array_max_concurrent)])
     if args.dry_run:
         cmd.append("--dry-run")
-
-    cmd.append("--")
-    for key, value in combo.items():
-        option = f"--{key.replace('_', '-')}"
-        cmd.extend([option, str(value)])
-
-    if args.disable_obs_normalization:
-        cmd.append("--normalize_obs")
-    if args.disable_reward_normalization:
-        cmd.append("--normalize_reward")
 
     return cmd
 
@@ -142,8 +131,8 @@ def main() -> None:
     parser.add_argument(
         "--submit-script",
         type=Path,
-        default=base_dir / "scripts" / "submit_slurm_training_job.sh",
-        help="Path to the helper that generates the sbatch file.",
+        default=base_dir / "scripts" / "submit_slurm_training_array.sh",
+        help="Path to the helper that generates the array sbatch file.",
     )
     parser.add_argument(
         "--time",
@@ -188,6 +177,12 @@ def main() -> None:
         "--job-script-dir",
         type=Path,
         help="Directory where generated sbatch scripts should be stored.",
+    )
+    parser.add_argument(
+        "--array-max-concurrent",
+        type=int,
+        default=50,
+        help="Maximum number of array tasks to run concurrently.",
     )
     parser.add_argument(
         "--use-gpu",
@@ -245,6 +240,7 @@ def main() -> None:
 
     combo_counter = 0
     run_counter = 0
+    manifest_entries: List[Dict[str, object]] = []
 
     for n_steps, batch_size in paired_rollout_settings:
         grid = dict(hyperparameter_space)
@@ -283,31 +279,53 @@ def main() -> None:
                 combo_config_path = run_dir / "config.json"
                 combo_config_path.write_text(json.dumps(combo_config, indent=2))
 
-                job_name = (
-                    f"{args.job_name_prefix}-{combo_id:03d}-{agent_index:02d}"
+                extra_args: List[str] = []
+                for key, value in combo_with_algo.items():
+                    option = f"--{key.replace('_', '-')}"
+                    extra_args.extend([option, str(value)])
+
+                if args.disable_obs_normalization:
+                    extra_args.append("--normalize_obs")
+                if args.disable_reward_normalization:
+                    extra_args.append("--normalize_reward")
+
+                manifest_entries.append(
+                    {
+                        "config": str(combo_config_path),
+                        "output": str(output_path),
+                        "extra_args": extra_args,
+                        "num_updates": args.num_updates,
+                        "num_envs": args.num_envs,
+                    }
                 )
-
-                cmd = build_submit_command(
-                    args.submit_script,
-                    args,
-                    job_name,
-                    output_path,
-                    combo_with_algo,
-                    combo_config_path,
-                )
-
-                quoted = " ".join(shlex.quote(part) for part in cmd)
-                print(f"[run {run_id:03d}] {quoted}")
-
-                subprocess.run(cmd, check=True)
+                print(f"[run {run_id:03d}] queued for array submission")
 
         if args.max_runs is not None and combo_counter >= args.max_runs:
             break
 
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    manifest_path = output_dir / f"{args.job_name_prefix}_manifest_{timestamp}.jsonl"
+    with manifest_path.open("w") as handle:
+        for entry in manifest_entries:
+            handle.write(json.dumps(entry))
+            handle.write("\n")
+
+    array_job_name = f"{args.job_name_prefix}-array"
+    cmd = build_array_submit_command(
+        args.submit_script,
+        args,
+        array_job_name,
+        manifest_path,
+    )
+
+    quoted = " ".join(shlex.quote(part) for part in cmd)
+    print(f"Submitting array job with {run_counter} tasks: {quoted}")
+    subprocess.run(cmd, check=True)
+
     if args.dry_run:
-        print("Dry run complete; inspect the generated sbatch scripts before submitting.")
+        print("Dry run complete; inspect the generated sbatch script before submitting.")
     else:
-        print(f"Submitted {run_counter} jobs via {args.submit_script}.")
+        print(f"Submitted {run_counter} array tasks via {args.submit_script}.")
 
 
 if __name__ == "__main__":

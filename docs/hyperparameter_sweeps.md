@@ -13,7 +13,7 @@ Launch multiple PPO runs with `scripts/submit_slurm_ppo_sweep.py`.
    - `config.json`: the generated simulator configuration.
    - `Agent.zip`: the trained Stable-Baselines3 checkpoint.
    - Additional simulator outputs produced during evaluation, if any.
-4. **Launch the sweep.** Provide both training flags and SLURM options. For example:
+4. **Launch the sweep.** Provide both training flags and SLURM options (these scripts now submit a single SLURM job array). For example:
    ```bash
    python scripts/submit_slurm_ppo_sweep.py \
        --config WorkingFiles/Config/default.json \
@@ -21,9 +21,10 @@ Launch multiple PPO runs with `scripts/submit_slurm_ppo_sweep.py`.
        --num-updates 400 \
        --partition compute \
        --gres gpu:1 \
+       --array-max-concurrent 50 \
        --max-runs 10
    ```
-5. **Monitor submissions.** The script prints the full command for each run before invoking the SLURM helper. Use `--dry-run` to generate scripts without submitting, or append scheduler settings such as `--time`, `--account`, or repeated `--extra-sbatch "#SBATCH ..."` arguments.
+5. **Monitor submissions.** The script prints queued runs, writes a manifest under the output directory, and submits a single array job. Use `--dry-run` to generate the array script without submitting, or append scheduler settings such as `--time`, `--account`, or repeated `--extra-sbatch "#SBATCH ..."` arguments.
 6. **Collect results** after the jobs finish:
    ```bash
    python scripts/collect_ppo_sweep_results.py
@@ -35,7 +36,7 @@ Launch multiple PPO runs with `scripts/submit_slurm_ppo_sweep.py`.
 
 1. Confirm the search grid aligns with your experiment. Edit `hyperparameter_space` to adjust optimizer and exploration settings, and tweak `training_schedules` for different `train_freq`, `gradient_steps`, or `target_update_interval` values.
 2. Provide a simulator configuration and output directory (default `WorkingFiles/Sweeps/dqn_slurm`). Each run folder contains `hyperparameters.json`, the generated `config.json`, and the resulting `Agent.zip` checkpoint.
-3. Launch the sweep with the same SLURM options you would pass to `submit_slurm_training_job.sh`:
+3. Launch the sweep with the same SLURM options you would pass to `submit_slurm_training_array.sh`:
    ```bash
    python scripts/submit_slurm_dqn_sweep.py \
        --config WorkingFiles/Config/default.json \
@@ -43,6 +44,7 @@ Launch multiple PPO runs with `scripts/submit_slurm_ppo_sweep.py`.
        --num-updates 500 \
        --partition compute \
        --mem 32G \
+       --array-max-concurrent 50 \
        --max-runs 8
    ```
 4. Collect the metrics after all jobs complete:
@@ -64,6 +66,7 @@ Use `scripts/submit_slurm_a2c_sweep.py` to manage A2C sweeps.
        --num-updates 400 \
        --partition compute \
        --gres gpu:1 \
+       --array-max-concurrent 50 \
        --dry-run
    ```
 4. Aggregate the results:
@@ -86,7 +89,8 @@ Example command requesting 1000 updates, a 23-hour walltime limit, and 16G of me
 python scripts/submit_all_sweeps.py \
     --common-args "--num-updates 1000" \
     --common-args "--time 23:00:00" \
-    --common-args "--mem 16G"
+    --common-args "--mem 16G" \
+    --common-args "--array-max-concurrent 50"
 ```
 
-The collector writes a `summary.csv` inside the sweep directory and, by default, removes generated scripts in `WorkingFiles/SlurmJobs`. Pass `--skip-cleanup` to keep them for auditing. Forward additional environment customizations (such as `--venv`, `--build-dir`, or `--use-gpu`) exactly as you would when calling `submit_slurm_training_job.sh` directly.
+The collector writes a `summary.csv` inside the sweep directory and, by default, removes generated scripts in `WorkingFiles/SlurmJobs`. Pass `--skip-cleanup` to keep them for auditing. Forward additional environment customizations (such as `--venv`, `--build-dir`, or `--use-gpu`) exactly as you would when calling `submit_slurm_training_array.sh` directly.

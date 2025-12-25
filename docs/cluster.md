@@ -38,7 +38,7 @@ python business_strategy_gym_env.py \
 
 ## SLURM Helpers
 
-Use `scripts/submit_slurm_training_job.sh` to create or submit SLURM jobs. The script fills in environment setup (virtual environment activation and `PYTHONPATH` adjustments) and accepts both training flags and scheduler options.
+Use `scripts/submit_slurm_training_job.sh` to create or submit single-run SLURM jobs. The script fills in environment setup (virtual environment activation and `PYTHONPATH` adjustments) and accepts both training flags and scheduler options.
 
 ```bash
 scripts/submit_slurm_training_job.sh \
@@ -51,6 +51,59 @@ scripts/submit_slurm_training_job.sh \
 
 Key flags mirror `business_strategy_gym_env.py` plus SLURM options. Use `--dry-run` to generate the batch script without submitting, or append extra training arguments after `--` (for example `--num_updates 1000`). Generated scripts are stored in `WorkingFiles/SlurmJobs/` by default.
 
+Use `scripts/submit_slurm_training_array.sh` to submit large batches as a job array. It expects a JSONL manifest with one entry per task:
+
+```json
+{"config": "/abs/path/config.json", "output": "/abs/path/Agent.zip", "extra_args": ["--algorithm", "ppo"], "num_updates": 400, "num_envs": 8}
+```
+
+Then submit the array with an optional concurrency cap:
+
+```bash
+scripts/submit_slurm_training_array.sh \
+    --manifest /path/to/manifest.jsonl \
+    --partition compute \
+    --time 23:00:00 \
+    --array-max-concurrent 50
+```
+
 ## Batch Sweeps on SLURM
 
 For PPO, DQN, and A2C sweeps on a cluster, refer to [docs/hyperparameter_sweeps.md](hyperparameter_sweeps.md) for detailed usage patterns.
+
+## Rerunning Batch Scripts (Array Submission)
+
+Use the following commands to rerun the batch helpers with SLURM arrays. Each command writes a manifest under the output directory and submits a single array job.
+
+**Default economy PPO batch**
+
+```bash
+python scripts/train_ppo_default_economy_batch.py \
+    --num-agents 100 \
+    --num-envs 8 \
+    --num-updates 400 \
+    --partition compute \
+    --time 23:00:00 \
+    --array-max-concurrent 50
+```
+
+**PPO per-config batch**
+
+```bash
+python scripts/train_ppo_for_config_batch.py \
+    --config-dir WorkingFiles/Config/TestBench \
+    --num-agents-per-config-file 10 \
+    --num-envs 8 \
+    --num-updates 400 \
+    --partition compute \
+    --time 23:00:00 \
+    --array-max-concurrent 50
+```
+
+**Hyperparameter sweeps (PPO/DQN/A2C)**
+
+```bash
+python scripts/submit_slurm_ppo_sweep.py --partition compute --array-max-concurrent 50
+python scripts/submit_slurm_dqn_sweep.py --partition compute --array-max-concurrent 50
+python scripts/submit_slurm_a2c_sweep.py --partition compute --array-max-concurrent 50
+```
