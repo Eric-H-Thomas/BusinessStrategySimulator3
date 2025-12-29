@@ -219,36 +219,13 @@ def main() -> None:
     # paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256), (2048, 512)]
     paired_rollout_settings: Sequence[Tuple[int, int]] = [(1024, 256)]
     base_config = json.loads(args.config.read_text())
-    # hyperparameter_space: Dict[str, Sequence[object]] = {
-    #     "learning_rate": [1e-4, 3e-4, 1e-3],
-    #     "gamma": [0.99, 0.995, 0.999],
-    #     "gae_lambda": [0.9, 0.95],
-    #     "clip_range": [0.15, 0.25],
-    #     "ent_coef": [0.0, 0.01, 0.02, 0.03],
-    #     "vf_coef": [0.5, 1.0],
-    # }
-
-    # TODO: TEMP; DELETE WHEN DONE
-
     hyperparameter_space: Dict[str, Sequence[object]] = {
-        "learning_rate": [1e-4],
-        "gamma": [0.99],
-        "gae_lambda": [0.9],
-        "clip_range": [0.15],
-        "ent_coef": [0.0,
-                     0.0025,
-                     0.005,
-                     0.0075,
-                     0.01,
-                     0.0125,
-                     0.015,
-                     0.0175,
-                     0.02,
-                     0.0225,
-                     0.025,
-                     0.0275,
-                     0.03],
-        "vf_coef": [0.5],
+        "learning_rate": [1e-4, 3e-4, 1e-3],
+        "gamma": [0.99, 0.995, 0.999],
+        "gae_lambda": [0.9, 0.95],
+        "clip_range": [0.15, 0.25],
+        "ent_coef": [0.0, 0.01, 0.02, 0.03],
+        "vf_coef": [0.5, 1.0],
     }
 
     combo_counter = 0
