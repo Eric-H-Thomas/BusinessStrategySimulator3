@@ -243,34 +243,34 @@ if __name__ == "__main__":
         "--learning-rate",
         dest="learning_rate",
         type=float,
-        default=3e-4,
+        default=1e-4,
         help="Learning rate passed to the selected algorithm.",
     )
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.999,
+        default=0.99,
         help="Discount factor for future rewards.",
     )
     parser.add_argument(
         "--gae-lambda",
         dest="gae_lambda",
         type=float,
-        default=0.95,
+        default=0.9,
         help="Generalized Advantage Estimation lambda parameter (used by PPO/A2C).",
     )
     parser.add_argument(
         "--clip-range",
         dest="clip_range",
         type=float,
-        default=0.2,
+        default=0.15,
         help="Clipping range for the policy objective.",
     )
     parser.add_argument(
         "--ent-coef",
         dest="ent_coef",
         type=float,
-        default=0.0,
+        default=0.02,
         help="Entropy bonus coefficient.",
     )
     parser.add_argument(
@@ -284,14 +284,14 @@ if __name__ == "__main__":
         "--n-steps",
         dest="n_steps",
         type=int,
-        default=2048,
+        default=1024,
         help="Number of environment steps to run per update.",
     )
     parser.add_argument(
         "--batch-size",
         dest="batch_size",
         type=int,
-        default=64,
+        default=256,
         help="Mini-batch size used during updates (PPO/DQN).",
     )
     parser.add_argument(

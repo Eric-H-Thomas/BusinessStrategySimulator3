@@ -230,7 +230,7 @@ def main() -> None:
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.995,
+        default=0.99,
         help="Discount factor for future rewards.",
     )
     parser.add_argument(
@@ -244,21 +244,21 @@ def main() -> None:
         "--clip-range",
         dest="clip_range",
         type=float,
-        default=0.25,
+        default=0.15,
         help="Clipping range for the PPO policy objective.",
     )
     parser.add_argument(
         "--ent-coef",
         dest="ent_coef",
         type=float,
-        default=0.01,
+        default=0.02,
         help="Entropy bonus coefficient.",
     )
     parser.add_argument(
         "--vf-coef",
         dest="vf_coef",
         type=float,
-        default=1.0,
+        default=0.5,
         help="Value function loss coefficient.",
     )
     parser.add_argument(
