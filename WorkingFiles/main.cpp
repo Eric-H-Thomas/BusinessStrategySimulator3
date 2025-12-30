@@ -7,6 +7,8 @@ Use business_strategy_gym_env.py or another Python script for training AI agents
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <filesystem>
+#include <cstdlib>
 #include "Simulator/Simulator.h"
 #include "Config/ConfigValidator.h"
 #include <pybind11/embed.h> // everything needed for embedding
@@ -16,6 +18,44 @@ using std::cout;
 using std::endl;
 
 namespace py = pybind11;
+
+namespace {
+    std::string quote_shell_path(const std::filesystem::path& path) {
+        std::string raw = path.string();
+        std::string escaped;
+        escaped.reserve(raw.size());
+        for (char ch : raw) {
+            if (ch == '"') {
+                escaped += "\\\"";
+            } else {
+                escaped += ch;
+            }
+        }
+        return "\"" + escaped + "\"";
+    }
+
+    void create_output_archive(const std::string& output_dir) {
+        namespace fs = std::filesystem;
+        fs::path output_path(output_dir);
+        fs::path master_output = output_path / "MasterOutput.csv";
+        fs::path market_overlap = output_path / "MarketOverlap.csv";
+        fs::path archive_path = output_path / "MasterOutput_MarketOverlap.zip";
+
+        if (!fs::exists(master_output)) {
+            throw std::runtime_error("Master output file not found at: " + master_output.string());
+        }
+        if (!fs::exists(market_overlap)) {
+            throw std::runtime_error("Market overlap file not found at: " + market_overlap.string());
+        }
+
+        std::string command = "zip -j " + quote_shell_path(archive_path) + " "
+            + quote_shell_path(master_output) + " " + quote_shell_path(market_overlap);
+        int result = std::system(command.c_str());
+        if (result != 0) {
+            throw std::runtime_error("Failed to create output archive with command: " + command);
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
 
@@ -64,6 +104,7 @@ int main(int argc, char* argv[]) {
         if (simulator.bGenerateMasterOutput) {
             simulator.masterHistory.generate_master_output();
             simulator.masterHistory.generate_market_overlap_file();
+            create_output_archive(simulator.masterHistory.strMasterHistoryOutputPath);
         }
     }
 
