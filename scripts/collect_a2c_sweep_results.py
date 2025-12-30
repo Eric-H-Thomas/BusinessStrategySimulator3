@@ -27,7 +27,7 @@ def gather_run_rows(run_dir: Path) -> Optional[Dict[str, Any]]:
     if not hyper_path.exists():
         return None
 
-    row: Dict[str, Any] = {"run": run_dir.name}
+    row: Dict[str, Any] = {"run": str(run_dir)}
     hyperparameters = load_json(hyper_path)
     row.update({str(key): hyperparameters[key] for key in sorted(hyperparameters)})
 
@@ -75,6 +75,10 @@ def write_csv(rows: List[Dict[str, Any]], output_path: Path) -> None:
         for row in rows:
             normalised_row = {key: _normalise_value(value) for key, value in row.items()}
             writer.writerow(normalised_row)
+
+
+def iter_run_dirs(root_dir: Path) -> List[Path]:
+    return sorted({hyper_path.parent for hyper_path in root_dir.rglob("hyperparameters.json")})
 
 
 def cleanup_slurm_jobs(slurm_jobs_dir: Path) -> None:
@@ -139,7 +143,7 @@ def main() -> None:
     if not input_dir.exists():
         raise FileNotFoundError(f"Sweep directory not found: {input_dir}")
 
-    run_dirs = sorted(path for path in input_dir.iterdir() if path.is_dir())
+    run_dirs = iter_run_dirs(input_dir)
     rows: List[Dict[str, Any]] = []
     for run_dir in run_dirs:
         row = gather_run_rows(run_dir)
