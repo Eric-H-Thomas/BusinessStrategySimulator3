@@ -52,7 +52,7 @@ def append_to_csv(csv_path: Path, rows):
     with csv_path.open(mode, newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(["json_path", "mean_reward"])
+            writer.writerow(["json_path", "mean_reward", "group", "rank_within_group"])
         for row in rows:
             writer.writerow(row)
 
@@ -82,13 +82,32 @@ def main():
     for json_path in find_json_files(args.root_dir):
         mean_reward = extract_mean_reward(json_path)
         if mean_reward is not None:
-            rows_to_append.append((str(json_path), mean_reward))
+            relative_parts = json_path.relative_to(args.root_dir).parts
+            group = relative_parts[0] if relative_parts else args.root_dir.name
+            rows_to_append.append(
+                {"json_path": str(json_path), "mean_reward": mean_reward, "group": group}
+            )
 
     if not rows_to_append:
         print("No valid 'mean reward' values found; nothing to write.")
         return
 
-    append_to_csv(args.output_csv, rows_to_append)
+    group_rows = {}
+    for row in rows_to_append:
+        group_rows.setdefault(row["group"], []).append(row)
+
+    formatted_rows = []
+    for group, rows in group_rows.items():
+        sorted_rows = sorted(rows, key=lambda row: row["mean_reward"], reverse=True)
+        rank = 0
+        last_reward = None
+        for row in sorted_rows:
+            if last_reward is None or row["mean_reward"] != last_reward:
+                rank += 1
+                last_reward = row["mean_reward"]
+            formatted_rows.append((row["json_path"], row["mean_reward"], group, rank))
+
+    append_to_csv(args.output_csv, formatted_rows)
     print(f"Wrote {len(rows_to_append)} rows to {args.output_csv}")
 
 
