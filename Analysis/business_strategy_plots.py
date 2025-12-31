@@ -544,6 +544,19 @@ def normalize_percent_change(df: pd.DataFrame) -> dict:
 
     return normalized_values
 
+
+def calculate_avg_bankruptcy_rate(df: pd.DataFrame) -> dict:
+    """Return average bankruptcy rate for each agent type."""
+    avg_bankruptcy_rates = {}
+
+    for agent_type in df["Agent Type"].unique():
+        agent_df = df[df["Agent Type"] == agent_type]
+        # Capital values of ``-1e-09`` denote bankruptcy in the output data.
+        bankruptcy_count = agent_df["Capital"].value_counts().get(-1e-09, 0)
+        avg_bankruptcy_rates[agent_type] = bankruptcy_count / len(agent_df["Capital"])
+
+    return avg_bankruptcy_rates
+
 """# Overlap/Firm-Market Entry Plots (Jake)"""
 
 # The following heatmap utilities rely on additional market overlap data.
@@ -808,8 +821,13 @@ def main() -> None:
 
     # Print summary statistics
     percent_changes = calculate_percent_change(df)
+    avg_bankruptcy_rates = calculate_avg_bankruptcy_rate(df)
     for agent_type, pct_change in percent_changes.items():
-        print(f"{agent_type}: {pct_change:.2f}%")
+        bankruptcy_rate = avg_bankruptcy_rates.get(agent_type, 0)
+        print(
+            f"{agent_type}: {pct_change:.2f}% "
+            f"(avg bankruptcy rate: {bankruptcy_rate:.2%})"
+        )
 
     normalized_changes = normalize_percent_change(df)
     for agent_type, norm_value in normalized_changes.items():
