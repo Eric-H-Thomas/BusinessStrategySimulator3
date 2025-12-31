@@ -87,9 +87,20 @@ def sort_by_agent_type_various_sophisticated_agent_types(df: pd.DataFrame) -> pd
     agent_types = set(df["Agent Type"].tolist())
     sophisticated_suffixes = ["A", "B", "C", "D"]
     sophisticated_idx = 0
+    abbreviated_mapping = {
+        "0S": "Sophisticated A",
+        "1S": "Sophisticated B",
+        "2S": "Sophisticated C",
+        "3S": "Sophisticated D",
+        "4AI": "AI",
+    }
     for agent in agent_types:
         # Similar pattern matching to ``sort_by_agent_type`` but we assign
         # sequential suffixes to distinguish the sophisticated variants.
+        if agent in abbreviated_mapping:
+            df.replace({"Agent Type": agent}, abbreviated_mapping[agent], inplace=True)
+            continue
+
         sophisticated = re.search(r"HighestOverlap", agent) or re.fullmatch(r"\d+S", agent)
         naive = re.search(r"All", agent) or re.fullmatch(r"\d+N", agent)
         ai = re.search(r"StableBaselines3", agent) or re.fullmatch(r"\d+AI", agent)
@@ -814,4 +825,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
