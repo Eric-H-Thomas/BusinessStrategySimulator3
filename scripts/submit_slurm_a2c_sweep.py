@@ -86,7 +86,11 @@ def main() -> None:
     parser.add_argument(
         "--config",
         type=Path,
-        default=base_dir / "WorkingFiles" / "Config" / "default.json",
+        default=base_dir
+        / "WorkingFiles"
+        / "Config"
+        / "TestBench"
+        / "DefaultEconomy.json",
         help="Simulator configuration to use for every run.",
     )
     parser.add_argument(
@@ -104,8 +108,8 @@ def main() -> None:
     parser.add_argument(
         "--num-updates",
         type=int,
-        default=500,
-        help="Number of training updates performed by each job.",
+        default=400,
+        help="Number of A2C updates performed by each job.",
     )
     parser.add_argument(
         "--job-name-prefix",
@@ -119,6 +123,12 @@ def main() -> None:
         help="Optional limit on how many hyperparameter combinations to submit.",
     )
     parser.add_argument(
+        "--agents-per-combo",
+        type=int,
+        default=10,
+        help="Number of independent agents to train per hyperparameter combination.",
+    )
+    parser.add_argument(
         "--submit-script",
         type=Path,
         default=base_dir / "scripts" / "submit_slurm_training_array.sh",
@@ -126,6 +136,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--time",
+        default="23:00:00",
         help="Requested walltime for each job (e.g., 04:00:00).",
     )
     parser.add_argument("--partition", help="SLURM partition/queue name.")
@@ -138,7 +149,12 @@ def main() -> None:
         dest="cpus_per_task",
         help="CPUs per task.",
     )
-    parser.add_argument("--mem", dest="memory", help="Memory request (e.g., 16G).")
+    parser.add_argument(
+        "--mem",
+        dest="memory",
+        default="16G",
+        help="Memory request (e.g., 16G).",
+    )
     parser.add_argument("--gres", help="Generic resource request (e.g., gpu:1).")
     parser.add_argument("--dependency", help="SLURM dependency specification.")
     parser.add_argument(
@@ -216,6 +232,7 @@ def main() -> None:
         (20, 160),
     )
 
+    combo_counter = 0
     run_counter = 0
     manifest_entries: List[Dict[str, object]] = []
 
@@ -224,53 +241,60 @@ def main() -> None:
         grid.update({"n_steps": [n_steps], "batch_size": [batch_size]})
 
         for combo in cartesian_product(grid):
-            if args.max_runs is not None and run_counter >= args.max_runs:
+            if args.max_runs is not None and combo_counter >= args.max_runs:
                 break
 
-            run_id = run_counter
-            run_counter += 1
+            combo_id = combo_counter
+            combo_counter += 1
+            for agent_index in range(args.agents_per_combo):
+                run_id = run_counter
+                run_counter += 1
 
-            combo_dir = output_dir / f"run_{run_id:03d}"
-            combo_dir.mkdir(parents=True, exist_ok=True)
-            metadata_path = combo_dir / "hyperparameters.json"
-            combo_with_algo = dict(combo)
-            combo_with_algo["algorithm"] = "a2c"
-            metadata_path.write_text(json.dumps(combo_with_algo, indent=2))
+                combo_dir = output_dir / f"combo_{combo_id:03d}"
+                run_dir = combo_dir / f"agent_{agent_index:02d}"
+                run_dir.mkdir(parents=True, exist_ok=True)
+                metadata_path = run_dir / "hyperparameters.json"
+                combo_with_algo = dict(combo)
+                combo_with_algo["algorithm"] = "a2c"
+                metadata = dict(combo_with_algo)
+                metadata["combo_id"] = combo_id
+                metadata["agent_index"] = agent_index
+                metadata_path.write_text(json.dumps(metadata, indent=2))
 
-            output_path = combo_dir / "Agent.zip"
-            run_results_dir = combo_dir.resolve()
+                output_path = run_dir / "Agent.zip"
+                run_results_dir = run_dir.resolve()
 
-            combo_config = copy.deepcopy(base_config)
-            sim_params = combo_config.setdefault("simulation_parameters", {})
-            sim_params["results_dir"] = str(run_results_dir)
-            for agent in combo_config.get("ai_agents", []):
-                agent["path_to_agent"] = str(output_path.resolve())
+                combo_config = copy.deepcopy(base_config)
+                sim_params = combo_config.setdefault("simulation_parameters", {})
+                sim_params["results_dir"] = str(run_results_dir)
+                for agent in combo_config.get("ai_agents", []):
+                    agent["path_to_agent"] = str(output_path.resolve())
 
-            combo_config_path = combo_dir / "config.json"
-            combo_config_path.write_text(json.dumps(combo_config, indent=2))
+                combo_config_path = run_dir / "config.json"
+                combo_config_path.write_text(json.dumps(combo_config, indent=2))
 
-            extra_args: List[str] = []
-            for key, value in combo_with_algo.items():
-                option = f"--{key.replace('_', '-')}"
-                extra_args.extend([option, str(value)])
+                extra_args: List[str] = []
+                for key, value in combo_with_algo.items():
+                    option = f"--{key.replace('_', '-')}"
+                    extra_args.extend([option, str(value)])
 
-            if args.disable_obs_normalization:
-                extra_args.append("--normalize_obs")
-            if args.disable_reward_normalization:
-                extra_args.append("--normalize_reward")
+                if args.disable_obs_normalization:
+                    extra_args.append("--normalize_obs")
+                if args.disable_reward_normalization:
+                    extra_args.append("--normalize_reward")
 
-            manifest_entries.append(
-                {
-                    "config": str(combo_config_path),
-                    "output": str(output_path),
-                    "extra_args": extra_args,
-                    "num_updates": args.num_updates,
-                    "num_envs": args.num_envs,
-                }
-            )
-            print(f"[run {run_id:03d}] queued for array submission")
+                manifest_entries.append(
+                    {
+                        "config": str(combo_config_path),
+                        "output": str(output_path),
+                        "extra_args": extra_args,
+                        "num_updates": args.num_updates,
+                        "num_envs": args.num_envs,
+                    }
+                )
+                print(f"[run {run_id:03d}] queued for array submission")
 
-        if args.max_runs is not None and run_counter >= args.max_runs:
+        if args.max_runs is not None and combo_counter >= args.max_runs:
             break
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
