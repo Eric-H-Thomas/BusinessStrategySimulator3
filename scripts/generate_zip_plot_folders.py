@@ -35,18 +35,7 @@ def find_member(zip_path: Path, candidates: tuple[str, ...]) -> str:
 
     raise ValueError(f"Could not find {candidates} inside {zip_path}")
 
-
-def uses_various_sophisticated_agent_types(df) -> bool:
-    """Detect if the data contain multiple sophisticated agent types."""
-    agent_types = set(df["Agent Type"].tolist())
-    sophisticated_count = 0
-    for agent in agent_types:
-        if re.search(r"HighestOverlap", agent) or re.fullmatch(r"\d+S", agent):
-            sophisticated_count += 1
-    return sophisticated_count > 1
-
-
-def generate_plots(zip_path: Path, output_dir: Path) -> None:
+def generate_plots(parent_name: Path, zip_path: Path, output_dir: Path) -> None:
     """Generate plots for a ZIP archive and save them into output_dir."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -55,22 +44,29 @@ def generate_plots(zip_path: Path, output_dir: Path) -> None:
 
     df = plots.load_data(zip_path, master_output)
 
-    if uses_various_sophisticated_agent_types(df):
+    if str(parent_name) == "VariousSophisticatedAgents":
         df = plots.sort_by_agent_type_various_sophisticated_agent_types(df)
         fig1 = plots.avg_bankruptcy_various_sophisticated_agent_types(df, clear_previous=True)
         fig2 = plots.plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
+
+        figures = {
+            "avg_bankruptcy.png": fig1,
+            "cumulative_capital.png": fig2
+        } # TODO: hotfix here; figure out the bug with plot 3 on the various sophisticated agents
+
     else:
         df = plots.sort_by_agent_type(df)
         fig1 = plots.avg_bankruptcy(df, clear_previous=True)
         fig2 = plots.plot_cumulative_capital(df, clear_previous=False)
+        fig3 = plots.performance_summary_std_error(df, clear_previous=False)
 
-    fig3 = plots.performance_summary_std_error(df, clear_previous=False)
+        figures = {
+            "avg_bankruptcy.png": fig1,
+            "cumulative_capital.png": fig2,
+            "performance_summary_std_error.png": fig3,
+        }
 
-    figures = {
-        "avg_bankruptcy.png": fig1,
-        "cumulative_capital.png": fig2,
-        "performance_summary_std_error.png": fig3,
-    }
+
 
     for filename, figure in figures.items():
         figure.savefig(output_dir / filename, dpi=300)
@@ -105,7 +101,7 @@ def main() -> None:
     for zip_path in zip_paths:
         parent_name = zip_path.parent.name
         destination = args.output_dir / parent_name
-        generate_plots(zip_path, destination)
+        generate_plots(parent_name, zip_path, destination)
 
 
 if __name__ == "__main__":
