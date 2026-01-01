@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import zipfile
 from pathlib import Path
-import re
 
 import matplotlib
 
@@ -70,6 +69,16 @@ def generate_plots(parent_name: Path, zip_path: Path, output_dir: Path) -> None:
 
     for filename, figure in figures.items():
         figure.savefig(output_dir / filename, dpi=300)
+
+    heatmap_data = plots.load_data(zip_path, master_output)
+    plots.plot_market_agent_type_heatmap(heatmap_data, step_interval=5)
+    plt.gcf().savefig(output_dir / "market_agent_type_heatmap.png", dpi=300)
+
+    plots.plot_firm_market_heatmap(heatmap_data, step_interval=5)
+    plt.gcf().savefig(output_dir / "firm_market_heatmap.png", dpi=300)
+
+    plots.plot_market_firm_heatmap(heatmap_data, step_interval=5)
+    plt.gcf().savefig(output_dir / "market_firm_heatmap.png", dpi=300)
 
     plt.close("all")
 
