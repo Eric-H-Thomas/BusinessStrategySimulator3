@@ -249,7 +249,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.99,
+        default=0.98,
         help="Discount factor for future rewards.",
     )
     parser.add_argument(
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         "--batch-size",
         dest="batch_size",
         type=int,
-        default=256,
+        default=64,
         help="Mini-batch size used during updates (PPO/DQN).",
     )
     parser.add_argument(
@@ -319,21 +319,21 @@ if __name__ == "__main__":
         "--buffer-size",
         dest="buffer_size",
         type=int,
-        default=100000,
+        default=50000,
         help="Replay buffer size (used by DQN).",
     )
     parser.add_argument(
         "--exploration-fraction",
         dest="exploration_fraction",
         type=float,
-        default=0.1,
+        default=0.2,
         help="Exploration fraction for epsilon decay (used by DQN).",
     )
     parser.add_argument(
         "--exploration-final-eps",
         dest="exploration_final_eps",
         type=float,
-        default=0.05,
+        default=0.01,
         help="Final value of epsilon after decay (used by DQN).",
     )
     parser.add_argument(
@@ -347,14 +347,14 @@ if __name__ == "__main__":
         "--gradient-steps",
         dest="gradient_steps",
         type=int,
-        default=1,
+        default=2,
         help="Gradient steps to perform after each rollout (used by DQN).",
     )
     parser.add_argument(
         "--target-update-interval",
         dest="target_update_interval",
         type=int,
-        default=10000,
+        default=4000,
         help="Frequency of target network updates (used by DQN).",
     )
     parser.add_argument(
