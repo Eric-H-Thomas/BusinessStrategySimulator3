@@ -1,16 +1,24 @@
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, DQN, A2C
 import numpy as np
 import os
 import json
 from typing import Optional
 
-# Globals for the loaded model and normalization parameters
-model = None
+# Globals for the loaded models and normalization parameters
+_models = {}
+_agent_algorithms = {}
+_default_algorithm = "ppo"
 _obs_scale = None
 _slices_initialized = False
 _num_agents = None
 _num_markets = None
 _num_possible_capabilities = None
+
+_ALGORITHM_CLASSES = {
+    "ppo": PPO,
+    "dqn": DQN,
+    "a2c": A2C,
+}
 
 
 def _init_slices(observation: np.ndarray):
@@ -105,12 +113,13 @@ def _compute_obs_scale(observation: np.ndarray) -> None:
 def reset_observation_normalization(config_path: Optional[str] = None) -> None:
     """Reset normalization so it will be recomputed on next call to simulate."""
     global _obs_scale, _slices_initialized, _num_agents, _num_markets
-    global _num_possible_capabilities
+    global _num_possible_capabilities, _agent_algorithms
     _obs_scale = None
     _slices_initialized = False
     _num_agents = None
     _num_markets = None
     _num_possible_capabilities = None
+    _agent_algorithms = {}
     if config_path is not None:
         with open(config_path, "r") as f:
             cfg = json.load(f)
@@ -118,15 +127,30 @@ def reset_observation_normalization(config_path: Optional[str] = None) -> None:
         econ = cfg.get("default_economy_parameters", {})
         _num_markets = econ.get("total_markets")
         _num_possible_capabilities = econ.get("possible_capabilities")
+        for agent in cfg.get("ai_agents", []):
+            if agent.get("agent_type") != "stable_baselines_3":
+                continue
+            agent_path = agent.get("path_to_agent")
+            if not agent_path:
+                continue
+            algorithm = str(agent.get("RL_Algorithm", _default_algorithm)).lower()
+            _agent_algorithms[agent_path] = algorithm
 
 
 def simulate(path, obs: tuple):
-    global model, _obs_scale
+    global _models, _obs_scale
 
-    if model is None:
+    algorithm = _agent_algorithms.get(path, _default_algorithm)
+    model_class = _ALGORITHM_CLASSES.get(algorithm)
+    if model_class is None:
+        raise ValueError(f"Unsupported RL algorithm '{algorithm}' for agent at: {path}")
+
+    model_key = (path, algorithm)
+    if model_key not in _models:
         if not os.path.isfile(path):
             raise FileNotFoundError(f"Model file not found at: {path}")
-        model = PPO.load(path)
+        _models[model_key] = model_class.load(path)
+    model = _models[model_key]
 
     converted_obs = np.array(obs, dtype=np.float32)
 
