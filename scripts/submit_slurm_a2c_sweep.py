@@ -223,8 +223,8 @@ def main() -> None:
         "gae_lambda": [0.9, 0.95, 0.99],
         "ent_coef": [0.0, 0.01],
         "vf_coef": [0.5, 1.0],
-        "max_grad_norm": [0.5, 0.75],
-        "rms_prop_eps": [1e-5, 1e-4],
+        "max_grad_norm": [0.5],
+        "rms_prop_eps": [1e-5],
     }
 
     rollout_settings: Sequence[Tuple[int, int]] = (
