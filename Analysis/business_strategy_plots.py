@@ -120,6 +120,25 @@ def sort_by_agent_type_various_sophisticated_agent_types(df: pd.DataFrame) -> pd
     return df
 
 
+def bankruptcy_rate_by_agent_type(df: pd.DataFrame) -> pd.Series:
+    """Compute bankruptcy rates using the final timestep for each simulation."""
+    # Aggregate across markets to avoid counting duplicate capital values.
+    capital_by_step = (
+        df.groupby(["Sim", "Step", "Firm", "Agent Type"], as_index=False)["Capital"]
+        .mean()
+    )
+    # Select the final timestep for each simulation/firm/agent type combo.
+    final_rows = capital_by_step.loc[
+        capital_by_step.groupby(["Sim", "Firm", "Agent Type"])["Step"].idxmax()
+    ]
+    bankruptcy_mask = final_rows["Capital"] == -1e-09
+    return (
+        final_rows.assign(Bankrupt=bankruptcy_mask)
+        .groupby("Agent Type")["Bankrupt"]
+        .mean()
+    )
+
+
 def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
     """Plot the percentage of simulations ending in bankruptcy for each agent type."""
     if clear_previous:
@@ -136,14 +155,10 @@ def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
     }
 
     agent_types = np.array(df["Agent Type"].unique())
-    avg_bankruptcies_per_agent_type = []
-    for agent_type in agent_types:
-        agent_type_df = df[df["Agent Type"] == agent_type]
-        # Capital values of ``-1e-09`` denote bankruptcy in the output data.
-        bankruptcy_cnt = agent_type_df["Capital"].value_counts().get(-1e-09, 0)
-        avg_bankruptcies_per_agent_type.append(
-            bankruptcy_cnt / len(agent_type_df["Capital"])
-        )
+    bankruptcy_rates = bankruptcy_rate_by_agent_type(df)
+    avg_bankruptcies_per_agent_type = bankruptcy_rates.reindex(
+        agent_types, fill_value=0
+    ).to_numpy()
 
     colors = [
         type_to_color.get(agent_type, "#999999") for agent_type in agent_types
@@ -176,14 +191,10 @@ def avg_bankruptcy_various_sophisticated_agent_types(
     }
 
     agent_types = np.array(df["Agent Type"].unique())
-    avg_bankruptcies_per_agent_type = []
-    for agent_type in agent_types:
-        agent_type_df = df[df["Agent Type"] == agent_type]
-        # Capital values of ``-1e-09`` denote bankruptcy in the output data.
-        bankruptcy_cnt = agent_type_df["Capital"].value_counts().get(-1e-09, 0)
-        avg_bankruptcies_per_agent_type.append(
-            bankruptcy_cnt / len(agent_type_df["Capital"])
-        )
+    bankruptcy_rates = bankruptcy_rate_by_agent_type(df)
+    avg_bankruptcies_per_agent_type = bankruptcy_rates.reindex(
+        agent_types, fill_value=0
+    ).to_numpy()
 
     colors = [
         type_to_color.get(agent_type, "#999999") for agent_type in agent_types
@@ -227,16 +238,10 @@ def avg_bankruptcy_combined(dfs, labels, clear_previous=True):
     width = 0.8 / len(agent_types)
 
     for i, (df, label) in enumerate(zip(dfs, labels)):
-        avg_bankruptcies_per_agent_type = []
-        for agent_type in agent_types:
-            agent_type_df = df[df["Agent Type"] == agent_type]
-            # Capital values of ``-1e-09`` denote bankruptcy in the output data.
-            bankruptcy_cnt = agent_type_df["Capital"].value_counts().get(-1e-09, 0)
-            avg_bankruptcies_per_agent_type.append(
-                bankruptcy_cnt / len(agent_type_df["Capital"])
-            )
-
-        avg_bankruptcies_per_agent_type = np.array(avg_bankruptcies_per_agent_type)
+        bankruptcy_rates = bankruptcy_rate_by_agent_type(df)
+        avg_bankruptcies_per_agent_type = bankruptcy_rates.reindex(
+            agent_types, fill_value=0
+        ).to_numpy()
 
         for j, agent_type in enumerate(agent_types):
             # Offset each agent type within the cluster corresponding to the
