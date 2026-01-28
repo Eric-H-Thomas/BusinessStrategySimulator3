@@ -552,15 +552,7 @@ def normalize_percent_change(df: pd.DataFrame) -> dict:
 
 def calculate_avg_bankruptcy_rate(df: pd.DataFrame) -> dict:
     """Return average bankruptcy rate for each agent type."""
-    avg_bankruptcy_rates = {}
-
-    for agent_type in df["Agent Type"].unique():
-        agent_df = df[df["Agent Type"] == agent_type]
-        # Capital values of ``-1e-09`` denote bankruptcy in the output data.
-        bankruptcy_count = agent_df["Capital"].value_counts().get(-1e-09, 0)
-        avg_bankruptcy_rates[agent_type] = bankruptcy_count / len(agent_df["Capital"])
-
-    return avg_bankruptcy_rates
+    return bankruptcy_rate_by_agent_type(df).to_dict()
 
 """# Overlap/Firm-Market Entry Plots (Jake)"""
 
