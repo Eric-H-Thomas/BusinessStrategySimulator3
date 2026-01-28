@@ -799,10 +799,23 @@ def main() -> None:
         action="store_true",
         help="Use this flag if you want to plot heat maps in addition to the core plots."
     )
+    parser.add_argument(
+        "--single-simulation",
+        type=int,
+        help="If set, only plot data from the specified simulation number."
+    )
     args = parser.parse_args()
 
     # Read in the master output CSV
     df = load_data(args.zip_path, args.master_output_file_name)
+    if args.single_simulation is not None:
+        available_simulations = df["Sim"].unique()
+        if args.single_simulation not in available_simulations:
+            parser.error(
+                f"Simulation {args.single_simulation} not found. "
+                f"Available simulations: {sorted(available_simulations)}"
+            )
+        df = df[df["Sim"] == args.single_simulation].copy()
     df = sort_by_agent_type_various_sophisticated_agent_types(df) if args.various_sophisticated_agent_types else sort_by_agent_type(df)
 
     # Generate core plots
@@ -837,6 +850,8 @@ def main() -> None:
     if args.plot_heatmaps:
         zip_filename = Path(args.zip_path)
         output = load_data(zip_filename, args.master_output_file_name)
+        if args.single_simulation is not None:
+            output = output[output["Sim"] == args.single_simulation].copy()
         plot_market_agent_type_heatmap(output, step_interval=5)
         plot_firm_market_heatmap(output, step_interval=5)
         plot_market_firm_heatmap(output, step_interval=5)
