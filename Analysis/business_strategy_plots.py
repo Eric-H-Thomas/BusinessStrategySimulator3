@@ -311,7 +311,7 @@ def aggregate_data_with_std(df: pd.DataFrame) -> pd.DataFrame:
     return sim_stats
 
 def performance_summary_std_error(
-    df: pd.DataFrame, clear_previous: bool = True
+    df: pd.DataFrame, clear_previous: bool = True, show_std_error: bool = True
 ) -> plt.Figure:
     """Plot revenue, cost and profit with shaded standard error regions."""
     if clear_previous:
@@ -377,13 +377,18 @@ def performance_summary_std_error(
             # the number of simulations contributing to that point. The
             # ``Count`` column returned by ``aggregate_data_with_std`` contains
             # this value for every step.
-            ax.fill_between(
-                agent_type_df["Step"],
-                np.clip(mean_values - (std_values / np.sqrt(agent_type_df["Count"])), 0, None),
-                mean_values + (std_values / np.sqrt(agent_type_df["Count"])),
-                color=type_to_color[agent_type],
-                alpha=0.2,
-            )
+            if show_std_error:
+                ax.fill_between(
+                    agent_type_df["Step"],
+                    np.clip(
+                        mean_values - (std_values / np.sqrt(agent_type_df["Count"])),
+                        0,
+                        None,
+                    ),
+                    mean_values + (std_values / np.sqrt(agent_type_df["Count"])),
+                    color=type_to_color[agent_type],
+                    alpha=0.2,
+                )
 
         ax.set_ylabel(metric)
         ax.grid(True, linestyle="--", alpha=0.7)
@@ -398,19 +403,20 @@ def performance_summary_std_error(
         ax.set_xticklabels(labels)
         ax.tick_params(axis="x", which="major", length=4, labelbottom=True)
 
-    fig.legend(
-        handles=shaded_region_patches,
-        loc="upper center",
-        ncol=len(shaded_region_patches),
-        bbox_to_anchor=(0.5, 0.95),
-        frameon=False,
-        title="Shaded Regions: Standard Error",
-    )
+    if show_std_error:
+        fig.legend(
+            handles=shaded_region_patches,
+            loc="upper center",
+            ncol=len(shaded_region_patches),
+            bbox_to_anchor=(0.5, 0.95),
+            frameon=False,
+            title="Shaded Regions: Standard Error",
+        )
 
     for ax in axes:
         ax.set_xlabel("Macrostep")
 
-    plt.tight_layout(rect=[0, 0, 1, 0.93])  # Allow room for global legend
+    plt.tight_layout(rect=[0, 0, 1, 0.93 if show_std_error else 1])
     return fig
 
 """# Cumulative Average Capital Plots (Nate)"""
@@ -823,7 +829,11 @@ def main() -> None:
         _fig1 = avg_bankruptcy(df, clear_previous=True)
         _fig2 = plot_cumulative_capital(df, clear_previous=False)
 
-    _fig3 = performance_summary_std_error(df, clear_previous=False)
+    _fig3 = performance_summary_std_error(
+        df,
+        clear_previous=False,
+        show_std_error=args.single_simulation is None,
+    )
 
     # Show all open figures at once (prevents later plots from closing earlier ones)
     plt.show()
