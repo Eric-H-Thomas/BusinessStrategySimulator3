@@ -60,6 +60,19 @@ def add_agent_type_subscripts(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=["Agent Index", "Agent Label"])
 
 
+def has_agent_subscripts(df: pd.DataFrame) -> bool:
+    """Return True if any agent labels include unicode subscripts."""
+    return df["Agent Type"].astype(str).str.contains(r"[₀-₉]+$").any()
+
+
+def aggregate_capital_by_firm(df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate capital across markets while preserving per-firm values."""
+    return (
+        df.groupby(["Sim", "Step", "Firm", "Agent Type"], as_index=False)["Capital"]
+        .mean()
+    )
+
+
 def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
     """Simplify agent type labels to broad categories.
 
@@ -461,7 +474,10 @@ def plot_cumulative_capital(
     if clear_previous:
         plt.close("all")
 
-    df = aggregate_data_with_std(df)
+    if has_agent_subscripts(df):
+        df = aggregate_capital_by_firm(df)
+    else:
+        df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
     ax.set_ylabel("Avg. Capital")
@@ -474,9 +490,13 @@ def plot_cumulative_capital(
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
         # Plot average capital trajectory for the current agent type.
+        if "Capital_mean" in agent_type_df:
+            capital_series = agent_type_df["Capital_mean"]
+        else:
+            capital_series = agent_type_df["Capital"]
         ax.plot(
             agent_type_df["Step"],
-            agent_type_df["Capital_mean"],
+            capital_series,
             color=type_to_color.get(base_agent_label(agent_type), "#999999"),
             linewidth=2,
             label=f"{agent_type}",
@@ -504,7 +524,10 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
     if clear_previous:
         plt.close("all")
 
-    df = aggregate_data_with_std(df)
+    if has_agent_subscripts(df):
+        df = aggregate_capital_by_firm(df)
+    else:
+        df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
     ax.set_ylabel("Avg. Capital")
@@ -524,9 +547,13 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
         # Use a default gray color if an unexpected agent type is encountered.
+        if "Capital_mean" in agent_type_df:
+            capital_series = agent_type_df["Capital_mean"]
+        else:
+            capital_series = agent_type_df["Capital"]
         ax.plot(
             agent_type_df["Step"],
-            agent_type_df["Capital_mean"],
+            capital_series,
             color=type_to_color.get(base_agent_label(agent_type), "#999999"),
             linewidth=2,
             label=f"{agent_type}",
