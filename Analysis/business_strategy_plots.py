@@ -34,6 +34,45 @@ def load_data(zip_path: Path, csv_name: str) -> pd.DataFrame:
             return pd.read_csv(csv_file)
 
 
+SUBSCRIPT_DIGITS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+
+def format_subscript(index: int) -> str:
+    """Convert an integer into a unicode subscript string."""
+    return str(index).translate(SUBSCRIPT_DIGITS)
+
+
+def base_agent_label(label: str) -> str:
+    """Return the base agent label with trailing subscripts stripped."""
+    return re.sub(r"[₀-₉]+$", "", label)
+
+
+def add_agent_type_subscripts(df: pd.DataFrame) -> pd.DataFrame:
+    """Append per-type subscripts to agent labels so each agent is unique."""
+    unique_pairs = df[["Agent Type", "Firm"]].drop_duplicates()
+    unique_pairs["Agent Index"] = unique_pairs.groupby("Agent Type").cumcount()
+    unique_pairs["Agent Label"] = unique_pairs["Agent Type"] + unique_pairs[
+        "Agent Index"
+    ].map(format_subscript)
+
+    df = df.merge(unique_pairs, on=["Agent Type", "Firm"], how="left")
+    df["Agent Type"] = df["Agent Label"]
+    return df.drop(columns=["Agent Index", "Agent Label"])
+
+
+def has_agent_subscripts(df: pd.DataFrame) -> bool:
+    """Return True if any agent labels include unicode subscripts."""
+    return df["Agent Type"].astype(str).str.contains(r"[₀-₉]+$").any()
+
+
+def aggregate_capital_by_firm(df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate capital across markets while preserving per-firm values."""
+    return (
+        df.groupby(["Sim", "Step", "Firm", "Agent Type"], as_index=False)["Capital"]
+        .mean()
+    )
+
+
 def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
     """Simplify agent type labels to broad categories.
 
@@ -161,7 +200,8 @@ def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
     ).to_numpy()
 
     colors = [
-        type_to_color.get(agent_type, "#999999") for agent_type in agent_types
+        type_to_color.get(base_agent_label(agent_type), "#999999")
+        for agent_type in agent_types
     ]  # Default to gray if not found
     avg_bankruptcies_per_agent_type = np.array(avg_bankruptcies_per_agent_type)
     ax.bar(agent_types, avg_bankruptcies_per_agent_type * 100, color=colors)
@@ -197,7 +237,8 @@ def avg_bankruptcy_various_sophisticated_agent_types(
     ).to_numpy()
 
     colors = [
-        type_to_color.get(agent_type, "#999999") for agent_type in agent_types
+        type_to_color.get(base_agent_label(agent_type), "#999999")
+        for agent_type in agent_types
     ]  # Default to gray if not found
     avg_bankruptcies_per_agent_type = np.array(avg_bankruptcies_per_agent_type)
     ax.bar(agent_types, avg_bankruptcies_per_agent_type * 100, color=colors)
@@ -251,7 +292,7 @@ def avg_bankruptcy_combined(dfs, labels, clear_previous=True):
                 avg_bankruptcies_per_agent_type[j] * 100,
                 width=width,
                 label=f"{agent_type}" if i == 0 else "",
-                color=type_to_color[agent_type],
+                color=type_to_color.get(base_agent_label(agent_type), "#999999"),
             )
 
     ax.set_xticks(x)
@@ -332,7 +373,11 @@ def performance_summary_std_error(
 
     # Proxy handles for legend entries describing shaded areas
     shaded_region_patches = [
-        patches.Patch(color=type_to_color[agent_type], alpha=0.2, label=f"{agent_type}")
+        patches.Patch(
+            color=type_to_color.get(base_agent_label(agent_type), "#999999"),
+            alpha=0.2,
+            label=f"{agent_type}",
+        )
         for agent_type in agent_types
     ]
 
@@ -368,7 +413,7 @@ def performance_summary_std_error(
             ax.plot(
                 agent_type_df["Step"],
                 mean_values,
-                color=type_to_color[agent_type],
+                color=type_to_color.get(base_agent_label(agent_type), "#999999"),
                 label=f"{agent_type}" if idx == 0 else "",
                 linewidth=1,
             )
@@ -386,7 +431,7 @@ def performance_summary_std_error(
                         None,
                     ),
                     mean_values + (std_values / np.sqrt(agent_type_df["Count"])),
-                    color=type_to_color[agent_type],
+                    color=type_to_color.get(base_agent_label(agent_type), "#999999"),
                     alpha=0.2,
                 )
 
@@ -429,7 +474,10 @@ def plot_cumulative_capital(
     if clear_previous:
         plt.close("all")
 
-    df = aggregate_data_with_std(df)
+    if has_agent_subscripts(df):
+        df = aggregate_capital_by_firm(df)
+    else:
+        df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
     ax.set_ylabel("Avg. Capital")
@@ -442,10 +490,14 @@ def plot_cumulative_capital(
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
         # Plot average capital trajectory for the current agent type.
+        if "Capital_mean" in agent_type_df:
+            capital_series = agent_type_df["Capital_mean"]
+        else:
+            capital_series = agent_type_df["Capital"]
         ax.plot(
             agent_type_df["Step"],
-            agent_type_df["Capital_mean"],
-            color=type_to_color[agent_type],
+            capital_series,
+            color=type_to_color.get(base_agent_label(agent_type), "#999999"),
             linewidth=2,
             label=f"{agent_type}",
         )
@@ -472,7 +524,10 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
     if clear_previous:
         plt.close("all")
 
-    df = aggregate_data_with_std(df)
+    if has_agent_subscripts(df):
+        df = aggregate_capital_by_firm(df)
+    else:
+        df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
     ax.set_ylabel("Avg. Capital")
@@ -492,10 +547,14 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
     for agent_type in agent_types:
         agent_type_df = df[df["Agent Type"] == agent_type]
         # Use a default gray color if an unexpected agent type is encountered.
+        if "Capital_mean" in agent_type_df:
+            capital_series = agent_type_df["Capital_mean"]
+        else:
+            capital_series = agent_type_df["Capital"]
         ax.plot(
             agent_type_df["Step"],
-            agent_type_df["Capital_mean"],
-            color=type_to_color.get(agent_type, "#999999"),
+            capital_series,
+            color=type_to_color.get(base_agent_label(agent_type), "#999999"),
             linewidth=2,
             label=f"{agent_type}",
         )
@@ -819,7 +878,13 @@ def main() -> None:
                 f"Available simulations: {sorted(available_simulations)}"
             )
         df = df[df["Sim"] == args.single_simulation].copy()
-    df = sort_by_agent_type_various_sophisticated_agent_types(df) if args.various_sophisticated_agent_types else sort_by_agent_type(df)
+    df = (
+        sort_by_agent_type_various_sophisticated_agent_types(df)
+        if args.various_sophisticated_agent_types
+        else sort_by_agent_type(df)
+    )
+    if args.single_simulation is not None:
+        df = add_agent_type_subscripts(df)
 
     # Generate core plots
     if args.various_sophisticated_agent_types:
