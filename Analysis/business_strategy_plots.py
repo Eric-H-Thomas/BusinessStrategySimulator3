@@ -73,6 +73,18 @@ def aggregate_capital_by_firm(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def assert_single_simulation(df: pd.DataFrame, context: str) -> None:
+    """Raise if data contains multiple simulations where a single one is required."""
+    if "Sim" not in df.columns:
+        return
+    simulation_count = df["Sim"].nunique()
+    if simulation_count > 1:
+        raise ValueError(
+            f"{context} expects a single simulation when agent subscripts are present, "
+            f"but found {simulation_count} simulations."
+        )
+
+
 def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
     """Simplify agent type labels to broad categories.
 
@@ -475,6 +487,7 @@ def plot_cumulative_capital(
         plt.close("all")
 
     if has_agent_subscripts(df):
+        assert_single_simulation(df, "plot_cumulative_capital")
         df = aggregate_capital_by_firm(df)
     else:
         df = aggregate_data_with_std(df)
@@ -525,6 +538,7 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
         plt.close("all")
 
     if has_agent_subscripts(df):
+        assert_single_simulation(df, "plot_cumulative_capital_various_sophisticated_agent_types")
         df = aggregate_capital_by_firm(df)
     else:
         df = aggregate_data_with_std(df)
