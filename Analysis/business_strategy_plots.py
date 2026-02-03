@@ -101,7 +101,7 @@ def sort_by_agent_type(df: pd.DataFrame) -> pd.DataFrame:
         (e.g. ``HighestOverlap``) and abbreviated forms like ``1S`` are
         recognised.
     """
-    agent_types = set(df["Agent Type"].tolist())
+    agent_types = sorted(set(df["Agent Type"].tolist()))
     for agent in agent_types:
         # The agent type string encodes the strategy. Use pattern
         # matching to map both verbose and abbreviated names onto concise
@@ -135,7 +135,7 @@ def sort_by_agent_type_various_sophisticated_agent_types(df: pd.DataFrame) -> pd
         ``Sophisticated A-D``. Supports both verbose and abbreviated
         agent identifiers (e.g. ``HighestOverlap`` or ``1S``).
     """
-    agent_types = set(df["Agent Type"].tolist())
+    agent_types = sorted(set(df["Agent Type"].tolist()))
     sophisticated_suffixes = ["A", "B", "C", "D"]
     sophisticated_idx = 0
     abbreviated_mapping = {
