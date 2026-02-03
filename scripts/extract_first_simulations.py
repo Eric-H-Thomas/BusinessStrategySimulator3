@@ -49,14 +49,14 @@ def extract_first_simulations(csv_path: Path, num_simulations: int) -> Path:
             writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
             writer.writeheader()
 
-            seen_simulations: list[str] = []
+            simulations_to_keep: set[str] = set()
             for row in reader:
                 sim_id = row.get("Sim")
                 if sim_id is None:
                     continue
-                if sim_id not in seen_simulations:
-                    seen_simulations.append(sim_id)
-                if sim_id in seen_simulations[:num_simulations]:
+                if len(simulations_to_keep) < num_simulations:
+                    simulations_to_keep.add(sim_id)
+                if sim_id in simulations_to_keep:
                     writer.writerow(row)
 
     return output_path
