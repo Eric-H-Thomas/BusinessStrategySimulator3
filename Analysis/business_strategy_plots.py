@@ -880,6 +880,11 @@ def main() -> None:
         type=int,
         help="If set, only plot data from the specified simulation number."
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="If set, save generated plots in this directory instead of showing them interactively.",
+    )
     args = parser.parse_args()
 
     # Read in the master output CSV
@@ -914,8 +919,14 @@ def main() -> None:
         show_std_error=args.single_simulation is None,
     )
 
-    # Show all open figures at once (prevents later plots from closing earlier ones)
-    plt.show()
+    if args.output_dir is not None:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        _fig1.savefig(args.output_dir / "avg_bankruptcy.png", dpi=300)
+        _fig2.savefig(args.output_dir / "cumulative_capital.png", dpi=300)
+        _fig3.savefig(args.output_dir / "performance_summary_std_error.png", dpi=300)
+    else:
+        # Show all open figures at once (prevents later plots from closing earlier ones)
+        plt.show()
 
 
     # Print summary statistics
@@ -939,8 +950,14 @@ def main() -> None:
         if args.single_simulation is not None:
             output = output[output["Sim"] == args.single_simulation].copy()
         plot_market_agent_type_heatmap(output, step_interval=5)
+        if args.output_dir is not None:
+            plt.gcf().savefig(args.output_dir / "market_agent_type_heatmap.png", dpi=300)
         plot_firm_market_heatmap(output, step_interval=5)
+        if args.output_dir is not None:
+            plt.gcf().savefig(args.output_dir / "firm_market_heatmap.png", dpi=300)
         plot_market_firm_heatmap(output, step_interval=5)
+        if args.output_dir is not None:
+            plt.gcf().savefig(args.output_dir / "market_firm_heatmap.png", dpi=300)
 
 if __name__ == "__main__":
     main()
