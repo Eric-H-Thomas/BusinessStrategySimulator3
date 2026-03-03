@@ -1,4 +1,4 @@
-"""Run the C++ simulator for every Agent.zip discovered under a folder tree."""
+"""Run the C++ simulator for every config.json discovered under a folder tree."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ from pathlib import Path
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Recursively find Agent.zip files, then run the simulator executable once "
-            "per sibling config.json file."
+            "Recursively find config.json files, then run the simulator executable "
+            "once per config file."
         )
     )
     parser.add_argument(
         "search_dir",
         type=Path,
-        help="Directory to recursively search for Agent.zip files.",
+        help="Directory to recursively search for config.json files.",
     )
     parser.add_argument(
         "--executable",
@@ -46,8 +46,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def find_agent_archives(search_dir: Path) -> list[Path]:
-    return sorted(path for path in search_dir.rglob("Agent.zip") if path.is_file())
+def find_config_files(search_dir: Path) -> list[Path]:
+    return sorted(path for path in search_dir.rglob("config.json") if path.is_file())
 
 
 def run_simulation(
@@ -82,31 +82,21 @@ def main() -> int:
         print(f"Working directory not found: {working_dir}", file=sys.stderr)
         return 1
 
-    archives = find_agent_archives(search_dir)
-    if not archives:
-        print(f"No Agent.zip files found under: {search_dir}")
+    config_paths = find_config_files(search_dir)
+    if not config_paths:
+        print(f"No config.json files found under: {search_dir}")
         return 0
 
     failures = 0
 
-    for archive_path in archives:
-        run_dir = archive_path.parent
-        config_path = run_dir / "config.json"
-
-        if not config_path.exists():
-            print(f"Skipping {archive_path}: missing {config_path.name}", file=sys.stderr)
-            failures += 1
-            if args.fail_fast:
-                return 1
-            continue
-
-        print(f"Running simulator for: {archive_path}")
+    for config_path in config_paths:
+        print(f"Running simulator for: {config_path}")
         result = run_simulation(executable=executable, config_path=config_path, working_dir=working_dir)
 
         if result.returncode != 0:
             failures += 1
             print(
-                f"FAILED ({result.returncode}) for {archive_path}\n"
+                f"FAILED ({result.returncode}) for {config_path}\n"
                 f"--- stdout ---\n{result.stdout}\n"
                 f"--- stderr ---\n{result.stderr}",
                 file=sys.stderr,
@@ -121,7 +111,7 @@ def main() -> int:
         print(f"Completed with {failures} failure(s).", file=sys.stderr)
         return 1
 
-    print(f"Completed successfully for {len(archives)} Agent.zip file(s).")
+    print(f"Completed successfully for {len(config_paths)} config.json file(s).")
     return 0
 
 
