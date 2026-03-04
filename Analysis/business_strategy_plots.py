@@ -633,6 +633,39 @@ def calculate_avg_bankruptcy_rate(df: pd.DataFrame) -> dict:
     """Return average bankruptcy rate for each agent type."""
     return bankruptcy_rate_by_agent_type(df).to_dict()
 
+
+def build_summary_statistics(df: pd.DataFrame) -> pd.DataFrame:
+    """Build a summary statistics table suitable for CSV export."""
+    rows = []
+
+    percent_changes = calculate_percent_change(df)
+    avg_bankruptcy_rates = calculate_avg_bankruptcy_rate(df)
+    normalized_changes = normalize_percent_change(df)
+
+    for agent_type, pct_change in percent_changes.items():
+        rows.append(
+            {
+                "Statistic": f"Percent Change - {agent_type}",
+                "Value": float(pct_change),
+            }
+        )
+        rows.append(
+            {
+                "Statistic": f"Average Bankruptcy Rate - {agent_type}",
+                "Value": float(avg_bankruptcy_rates.get(agent_type, 0.0)),
+            }
+        )
+
+    for agent_type, norm_value in normalized_changes.items():
+        rows.append(
+            {
+                "Statistic": f"Relative Growth - {agent_type}",
+                "Value": float(norm_value),
+            }
+        )
+
+    return pd.DataFrame(rows, columns=["Statistic", "Value"])
+
 """# Overlap/Firm-Market Entry Plots (Jake)"""
 
 # The following heatmap utilities rely on additional market overlap data.
@@ -885,6 +918,11 @@ def main() -> None:
         type=Path,
         help="If set, save generated plots in this directory instead of showing them interactively.",
     )
+    parser.add_argument(
+        "--stats-only",
+        action="store_true",
+        help="Skip plot generation and only write summary statistics to CSV.",
+    )
     args = parser.parse_args()
 
     # Read in the master output CSV
@@ -905,46 +943,36 @@ def main() -> None:
     if args.single_simulation is not None:
         df = add_agent_type_subscripts(df)
 
-    # Generate core plots
-    if args.various_sophisticated_agent_types:
-        _fig1 = avg_bankruptcy_various_sophisticated_agent_types(df, clear_previous=True)
-        _fig2 = plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
-    else:
-        _fig1 = avg_bankruptcy(df, clear_previous=True)
-        _fig2 = plot_cumulative_capital(df, clear_previous=False)
+    summary_stats = build_summary_statistics(df)
+    summary_output_path = args.zip_path.parent / f"{args.zip_path.stem}_summary_statistics.csv"
+    summary_stats.to_csv(summary_output_path, index=False)
 
-    _fig3 = performance_summary_std_error(
-        df,
-        clear_previous=False,
-        show_std_error=args.single_simulation is None,
-    )
+    if not args.stats_only:
+        # Generate core plots
+        if args.various_sophisticated_agent_types:
+            _fig1 = avg_bankruptcy_various_sophisticated_agent_types(df, clear_previous=True)
+            _fig2 = plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
+        else:
+            _fig1 = avg_bankruptcy(df, clear_previous=True)
+            _fig2 = plot_cumulative_capital(df, clear_previous=False)
 
-    if args.output_dir is not None:
-        args.output_dir.mkdir(parents=True, exist_ok=True)
-        _fig1.savefig(args.output_dir / "avg_bankruptcy.png", dpi=300)
-        _fig2.savefig(args.output_dir / "cumulative_capital.png", dpi=300)
-        _fig3.savefig(args.output_dir / "performance_summary_std_error.png", dpi=300)
-    else:
-        # Show all open figures at once (prevents later plots from closing earlier ones)
-        plt.show()
-
-
-    # Print summary statistics
-    percent_changes = calculate_percent_change(df)
-    avg_bankruptcy_rates = calculate_avg_bankruptcy_rate(df)
-    for agent_type, pct_change in percent_changes.items():
-        bankruptcy_rate = avg_bankruptcy_rates.get(agent_type, 0)
-        print(
-            f"{agent_type}: {pct_change:.2f}% "
-            f"(avg bankruptcy rate: {bankruptcy_rate:.2%})"
+        _fig3 = performance_summary_std_error(
+            df,
+            clear_previous=False,
+            show_std_error=args.single_simulation is None,
         )
 
-    normalized_changes = normalize_percent_change(df)
-    for agent_type, norm_value in normalized_changes.items():
-        print(f"{agent_type}: {norm_value:.2f} (relative growth)")
+        if args.output_dir is not None:
+            args.output_dir.mkdir(parents=True, exist_ok=True)
+            _fig1.savefig(args.output_dir / "avg_bankruptcy.png", dpi=300)
+            _fig2.savefig(args.output_dir / "cumulative_capital.png", dpi=300)
+            _fig3.savefig(args.output_dir / "performance_summary_std_error.png", dpi=300)
+        else:
+            # Show all open figures at once (prevents later plots from closing earlier ones)
+            plt.show()
 
     # Heatmap utilities require additional overlap data and are not executed by default.
-    if args.plot_heatmaps:
+    if args.plot_heatmaps and not args.stats_only:
         zip_filename = Path(args.zip_path)
         output = load_data(zip_filename, args.master_output_file_name)
         if args.single_simulation is not None:
