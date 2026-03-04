@@ -64,9 +64,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def folder_b_uses_various_sophisticated_agent_types(folder_b: Path) -> bool:
-    """Return whether folder B indicates various sophisticated agent types."""
-    return "varioussophisticatedagents" in str(folder_b).lower()
+def folder_uses_various_sophisticated_agent_types(folder: Path) -> bool:
+    """Return whether the folder indicates various sophisticated agent types."""
+    return "varioussophisticatedagents" in str(folder).lower()
 
 
 def run_stats_only_for_zip(zip_path: Path, various_types: bool) -> Path:
@@ -140,7 +140,7 @@ def write_average_summary_csv(summary_paths: list[Path], output_path: Path) -> N
 
 
 def build_bankruptcy_ci_df(results: list[ZipResult]) -> pd.DataFrame:
-    """Build bankruptcy mean and CI table across ZIPs."""
+    """Build bankruptcy mean and CI table across ZIPs (CI aligned by index)."""
     rows: list[dict[str, float | str]] = []
     for result in results:
         for agent_type, value in result.bankruptcy_by_agent_type.items():
@@ -153,25 +153,38 @@ def build_bankruptcy_ci_df(results: list[ZipResult]) -> pd.DataFrame:
             )
 
     per_zip = pd.DataFrame(rows)
+
     grouped = per_zip.groupby("Agent Type")["Bankruptcy Rate"]
-    summary = grouped.agg(["mean", "count"]).reset_index()
-    summary["ci"] = grouped.apply(confidence_interval_95).to_numpy()
-    return summary.rename(columns={"mean": "Mean", "count": "N", "ci": "CI95"})
+
+    # Compute aggregates; keep Agent Type as index for safe alignment.
+    summary = grouped.agg(Mean="mean", N="count")
+
+    # Compute CI as a Series indexed by Agent Type and align by index on assignment.
+    summary["CI95"] = grouped.apply(confidence_interval_95)
+
+    # Back to a regular column layout
+    return summary.reset_index()
 
 
 def build_capital_ci_df(results: list[ZipResult]) -> pd.DataFrame:
-    """Build timestep-wise capital mean and CI table across ZIPs."""
-    rows: list[pd.DataFrame] = []
+    """Build timestep-wise capital mean and CI table across ZIPs (CI aligned by index)."""
+    frames: list[pd.DataFrame] = []
     for result in results:
         tmp = result.capital_by_step_agent_type.copy()
         tmp["Zip"] = str(result.zip_path)
-        rows.append(tmp)
+        frames.append(tmp)
 
-    per_zip = pd.concat(rows, ignore_index=True)
+    per_zip = pd.concat(frames, ignore_index=True)
+
     grouped = per_zip.groupby(["Step", "Agent Type"])["Capital"]
-    summary = grouped.agg(["mean", "count"]).reset_index()
-    summary["ci"] = grouped.apply(confidence_interval_95).to_numpy()
-    return summary.rename(columns={"mean": "Mean", "count": "N", "ci": "CI95"})
+
+    # Compute aggregates; keep (Step, Agent Type) as a MultiIndex for safe alignment.
+    summary = grouped.agg(Mean="mean", N="count")
+
+    # CI is a Series with the same MultiIndex; assignment aligns correctly.
+    summary["CI95"] = grouped.apply(confidence_interval_95)
+
+    return summary.reset_index()
 
 
 def plot_average_bankruptcy_with_ci(summary_df: pd.DataFrame, output_path: Path) -> None:
@@ -244,9 +257,10 @@ def main() -> None:
         raise SystemExit(f"No folder B directories found under folder A: {folder_a}")
 
     results: list[ZipResult] = []
+    various_types = folder_uses_various_sophisticated_agent_types(folder_a)
 
     for folder_b in folder_b_dirs:
-        various_types = folder_b_uses_various_sophisticated_agent_types(folder_b)
+
         zip_paths = sorted(folder_b.rglob(MASTER_OUTPUT_ZIP_NAME))
         if not zip_paths:
             continue

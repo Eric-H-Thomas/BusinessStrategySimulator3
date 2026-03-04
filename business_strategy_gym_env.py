@@ -227,7 +227,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the MPS GPU if available instead of the CPU.",
     )
-    # CHANGED: make this a normal on/off flag (default True)
+    # TODO: make this a normal on/off flag (default True)
     parser.add_argument(
         "--normalize_obs",
         action="store_false",
