@@ -493,7 +493,8 @@ def plot_cumulative_capital(
         df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.set_ylabel("Avg. Capital")
+    ax.set_ylabel("Average Capital")
+    ax.set_xlabel("Micro Time Step")
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
 
@@ -525,7 +526,7 @@ def plot_cumulative_capital(
     labels = [str(int(tick / 10)) if tick in label_ticks else "" for tick in all_ticks]
     ax.set_xticklabels(labels)
 
-    ax.legend()
+    ax.legend(fontsize="large")
     plt.tight_layout()
     return fig
 
@@ -544,7 +545,8 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
         df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.set_ylabel("Avg. Capital")
+    ax.set_ylabel("Average Capital")
+    ax.set_xlabel("Micro Time Step")
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
 
@@ -583,7 +585,7 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
     labels = [str(int(tick / 10)) if tick in label_ticks else "" for tick in all_ticks]
     ax.set_xticklabels(labels)
 
-    ax.legend()
+    ax.legend(fontsize="large")
     plt.tight_layout()
     return fig
 
