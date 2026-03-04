@@ -787,54 +787,94 @@ def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, s
 
 def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
     """
-    Plots a heatmap showing the frequency of firms being in markets over time, averaged across simulations,
-    with horizontal lines to separate each firm.
+    Plots a heatmap showing the frequency of agent types being in markets over time,
+    averaged across simulations.
 
     Parameters:
     - data: DataFrame containing the simulation data.
-    - step_interval: Number of timesteps to average over (e.g., 1 for each step, 5 for blocks of 5 steps).
+    - step_interval: Deprecated. Kept for backwards compatibility but ignored.
     - sim: Which simulation we are checking activity in.
     """
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
 
-    # Group time steps into ``step_interval``-sized bins for averaging.
-    data.loc[:, 'Step Interval'] = (data['Step'] // step_interval) * step_interval
+    # Average over broad agent types and preserve each raw timestep.
+    data = sort_by_agent_type(data.copy())
+    agent_type_order = ['Sophisticated', 'Naive', 'AI']
+    data.loc[:, 'Agent Type'] = pd.Categorical(
+        data['Agent Type'],
+        categories=agent_type_order,
+        ordered=True,
+    )
 
-    # Aggregate data by averaging over simulations and the specified step intervals
+    # Aggregate data by averaging over simulations and agent-type membership per market.
     aggregated_data = (
-        data.groupby(['Step Interval', 'Firm', 'Market'])['In Market']
+        data.groupby(['Step', 'Agent Type', 'Market'])['In Market']
         .mean()
         .reset_index()
     )
+    aggregated_data = aggregated_data.sort_values(['Agent Type', 'Market', 'Step'])
 
-    # Pivot to create a matrix where rows are (Firm, Market), columns are Step Intervals, and values are averaged 'In Market'
-    heatmap_data = aggregated_data.pivot(index=['Firm', 'Market'], columns='Step Interval', values='In Market')
+    # Pivot to create a matrix where rows are (Agent Type, Market), columns are timesteps,
+    # and values are averaged 'In Market'.
+    heatmap_data = aggregated_data.pivot(index=['Agent Type', 'Market'], columns='Step', values='In Market')
+    heatmap_data = heatmap_data.reindex(agent_type_order, level='Agent Type')
 
     # Plot the heatmap
     plt.figure(figsize=(15, 12))
     ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Avg Frequency In Market'})
 
-    # Add horizontal lines to separate each firm
-    firms = heatmap_data.index.get_level_values('Firm')
-    firm_changes = firms.to_series().diff().ne(0).to_numpy().nonzero()[0]
-    for line_pos in firm_changes:
-        ax.axhline(line_pos, color='black', linewidth=1.5)
-
-    # Add horizontal lines to separate each firm and firm-market pair
+    # Add horizontal lines to separate each row.
     total_rows = heatmap_data.index.size
     for line_pos in range(1, total_rows):
         ax.axhline(line_pos, color='black', linewidth=0.5)
 
-    # Add titles and labels
-    if sim == 'All':
-        title = f'Firm-Market Presence Over Time (Averaged Over {step_interval} Timesteps)'
-    else:
-        title = f'Firm-Market Presence Over Time (Averaged Over {step_interval} Timesteps) in Simulation {sim}'
+    # Add thicker separators between agent-type bands.
+    type_values = heatmap_data.index.get_level_values('Agent Type')
+    type_changes = type_values.to_series().ne(type_values.to_series().shift()).to_numpy().nonzero()[0]
+    for line_pos in type_changes[1:]:
+        ax.axhline(line_pos, color='black', linewidth=1.5)
 
-    plt.title(title)
-    plt.xlabel('Time Step Intervals')
-    plt.ylabel('Firm, Market')
+    # Show only market labels in each row.
+    market_labels = [str(market) for market in heatmap_data.index.get_level_values('Market')]
+    ax.set_yticks(np.arange(total_rows) + 0.5)
+    ax.set_yticklabels(market_labels, rotation=0)
+
+    # Add a merged-cell style label column for each agent type on the left.
+    start = 0
+    for agent_type in agent_type_order:
+        mask = type_values == agent_type
+        count = int(mask.sum())
+        if count == 0:
+            continue
+        center = start + count / 2
+        band = patches.Rectangle(
+            (-0.28, start),
+            0.22,
+            count,
+            transform=ax.get_yaxis_transform(),
+            facecolor='#f0f0f0',
+            edgecolor='black',
+            linewidth=1.0,
+            clip_on=False,
+        )
+        ax.add_patch(band)
+        ax.text(
+            -0.17,
+            center,
+            agent_type,
+            transform=ax.get_yaxis_transform(),
+            ha='center',
+            va='center',
+            fontsize=11,
+            fontweight='bold',
+            clip_on=False,
+        )
+        start += count
+
+    # Labels only (no title by request).
+    plt.xlabel('Time Step')
+    plt.ylabel('Market #')
     plt.tight_layout()
     plt.show()
 
@@ -982,7 +1022,7 @@ def main() -> None:
         plot_market_agent_type_heatmap(output, step_interval=5)
         if args.output_dir is not None:
             plt.gcf().savefig(args.output_dir / "market_agent_type_heatmap.png", dpi=300)
-        plot_firm_market_heatmap(output, step_interval=5)
+        plot_firm_market_heatmap(output)
         if args.output_dir is not None:
             plt.gcf().savefig(args.output_dir / "firm_market_heatmap.png", dpi=300)
         plot_market_firm_heatmap(output, step_interval=5)
