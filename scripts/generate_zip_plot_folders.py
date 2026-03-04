@@ -74,7 +74,7 @@ def generate_plots(parent_name: Path, zip_path: Path, output_dir: Path) -> None:
     plots.plot_market_agent_type_heatmap(heatmap_data, step_interval=5)
     plt.gcf().savefig(output_dir / "market_agent_type_heatmap.png", dpi=300)
 
-    plots.plot_firm_market_heatmap(heatmap_data, step_interval=5)
+    plots.plot_firm_market_heatmap(heatmap_data)
     plt.gcf().savefig(output_dir / "firm_market_heatmap.png", dpi=300)
 
     plots.plot_market_firm_heatmap(heatmap_data, step_interval=5)
