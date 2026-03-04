@@ -822,7 +822,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
     # Plot the heatmap
     plt.figure(figsize=(15, 12))
-    ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Avg Frequency In Market'})
+    ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Average Frequency in Market'})
 
     # Add horizontal lines to separate each row.
     total_rows = heatmap_data.index.size
@@ -841,6 +841,17 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     ax.set_yticklabels(market_labels, rotation=0)
 
     # Add a merged-cell style label column for each agent type on the left.
+    # Use the same agent-color palette used for CI shading in batch_plot_generation.py.
+    type_to_band_color = {
+        'Sophisticated': '#1446A0',
+        'Naive': '#9E4770',
+        'AI': '#79AEA3',
+    }
+
+    # Keep a compact legend band, while leaving a visible gap to the y-axis ticks.
+    legend_x = -0.19
+    legend_width = 0.07
+
     start = 0
     for agent_type in agent_type_order:
         mask = type_values == agent_type
@@ -849,33 +860,57 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             continue
         center = start + count / 2
         band = patches.Rectangle(
-            (-0.28, start),
-            0.22,
+            (legend_x, start),
+            legend_width,
             count,
             transform=ax.get_yaxis_transform(),
-            facecolor='#f0f0f0',
+            facecolor=type_to_band_color.get(agent_type, '#f0f0f0'),
             edgecolor='black',
             linewidth=1.0,
+            alpha=0.2,
             clip_on=False,
         )
         ax.add_patch(band)
         ax.text(
-            -0.17,
+            legend_x + (legend_width / 2),
             center,
             agent_type,
             transform=ax.get_yaxis_transform(),
             ha='center',
             va='center',
+            rotation=90,
             fontsize=11,
             fontweight='bold',
             clip_on=False,
         )
         start += count
 
+    # Add a thick outer border around the full legend area.
+    legend_outline = patches.Rectangle(
+        (legend_x, 0),
+        legend_width,
+        total_rows,
+        transform=ax.get_yaxis_transform(),
+        facecolor='none',
+        edgecolor='black',
+        linewidth=2.0,
+        clip_on=False,
+    )
+    ax.add_patch(legend_outline)
+
+    # Label x-axis ticks every 50 timesteps to reduce clutter.
+    step_values = heatmap_data.columns.to_numpy()
+    tick_positions = [idx + 0.5 for idx, step in enumerate(step_values) if step % 50 == 0]
+    tick_labels = [str(step) for step in step_values if step % 50 == 0]
+    if tick_positions:
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels(tick_labels, rotation=90)
+
     # Labels only (no title by request).
     plt.xlabel('Time Step')
-    plt.ylabel('Market #')
+    plt.ylabel('Market #', labelpad=24)
     plt.tight_layout()
+    plt.subplots_adjust(left=0.12)
     plt.show()
 
 def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
