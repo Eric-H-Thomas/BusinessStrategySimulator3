@@ -818,7 +818,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     # Pivot to create a matrix where rows are (Agent Type, Market), columns are timesteps,
     # and values are averaged 'In Market'.
     heatmap_data = aggregated_data.pivot(index=['Agent Type', 'Market'], columns='Step', values='In Market')
-    heatmap_data = heatmap_data.sort_index(level=['Agent Type', 'Market'])
+    heatmap_data = heatmap_data.reindex(agent_type_order, level='Agent Type')
 
     # Plot the heatmap
     plt.figure(figsize=(15, 12))
