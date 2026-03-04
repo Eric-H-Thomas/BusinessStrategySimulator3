@@ -849,8 +849,8 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     }
 
     # Keep a compact legend band, while leaving a visible gap to the y-axis ticks.
-    legend_x = -0.19
-    legend_width = 0.07
+    legend_x = -0.18
+    legend_width = 0.06
 
     start = 0
     for agent_type in agent_type_order:
@@ -866,7 +866,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             transform=ax.get_yaxis_transform(),
             facecolor=type_to_band_color.get(agent_type, '#f0f0f0'),
             edgecolor='black',
-            linewidth=1.0,
+            linewidth=2.5,
             alpha=0.2,
             clip_on=False,
         )
@@ -893,10 +893,27 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
         transform=ax.get_yaxis_transform(),
         facecolor='none',
         edgecolor='black',
-        linewidth=2.0,
+        linewidth=2.5,
         clip_on=False,
     )
     ax.add_patch(legend_outline)
+
+    # Emphasize horizontal divider lines between agent-type legend sections.
+    section_starts = [0]
+    running = 0
+    for agent_type in agent_type_order:
+        running += int((type_values == agent_type).sum())
+        section_starts.append(running)
+
+    for y_pos in section_starts[1:-1]:
+        ax.plot(
+            [legend_x, legend_x + legend_width],
+            [y_pos, y_pos],
+            transform=ax.get_yaxis_transform(),
+            color='black',
+            linewidth=2.5,
+            clip_on=False,
+        )
 
     # Label x-axis ticks every 50 timesteps to reduce clutter.
     step_values = heatmap_data.columns.to_numpy()
@@ -908,9 +925,9 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
     # Labels only (no title by request).
     plt.xlabel('Time Step')
-    plt.ylabel('Market #', labelpad=24)
+    plt.ylabel('Market #', labelpad=34)
     plt.tight_layout()
-    plt.subplots_adjust(left=0.12)
+    plt.subplots_adjust(left=0.18)
     plt.show()
 
 def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
