@@ -849,7 +849,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     }
 
     # Keep a compact legend band, while leaving a visible gap to the y-axis ticks.
-    legend_x = -0.18
+    legend_x = -0.17
     legend_width = 0.06
 
     start = 0
@@ -925,9 +925,9 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
     # Labels only (no title by request).
     plt.xlabel('Time Step')
-    plt.ylabel('Market #', labelpad=34)
+    plt.ylabel('Market #', labelpad=30)
     plt.tight_layout()
-    plt.subplots_adjust(left=0.18)
+    plt.subplots_adjust(left=0.17)
     plt.show()
 
 def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
