@@ -25,6 +25,7 @@ import pandas as pd
 # Import plotting helpers for consistent label mapping and aggregation behavior.
 from Analysis.business_strategy_plots import (  # pylint: disable=import-error
     aggregate_data_with_std,
+    base_agent_label,
     bankruptcy_rate_by_agent_type,
     sort_by_agent_type,
     sort_by_agent_type_various_sophisticated_agent_types,
@@ -192,11 +193,26 @@ def plot_average_bankruptcy_with_ci(summary_df: pd.DataFrame, output_path: Path)
     ordered = summary_df.sort_values("Agent Type")
     fig, ax = plt.subplots(figsize=(12, 6))
 
+    type_to_color = {
+        "AI": "#79AEA3",
+        "Naive": "#9E4770",
+        "Sophisticated": "#1446A0",
+        "Sophisticated A": "#1446A0",
+        "Sophisticated B": "#2166C4",
+        "Sophisticated C": "#0094C8",
+        "Sophisticated D": "#00B894",
+    }
+
     x = np.arange(len(ordered))
     means_pct = ordered["Mean"].to_numpy() * 100
     ci_pct = ordered["CI95"].to_numpy() * 100
 
-    ax.bar(x, means_pct, color="#79AEA3", alpha=0.85)
+    colors = [
+        type_to_color.get(base_agent_label(agent_type), "#999999")
+        for agent_type in ordered["Agent Type"]
+    ]
+
+    ax.bar(x, means_pct, color=colors, alpha=0.85)
     ax.errorbar(x, means_pct, yerr=ci_pct, fmt="none", ecolor="black", capsize=4)
     ax.set_xticks(x)
     ax.set_xticklabels(ordered["Agent Type"], rotation=0)
