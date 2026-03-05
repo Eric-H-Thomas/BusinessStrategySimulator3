@@ -495,8 +495,8 @@ def write_mean_reward_boxplot(
 
     plt.figure(figsize=(12, 6))
     plt.boxplot(data, labels=labels, patch_artist=True)
-    plt.xlabel("Shareability level")
-    plt.ylabel("Mean reward")
+    plt.xlabel("Shareability level", fontsize="large")
+    plt.ylabel("Mean reward", fontsize="large")
     plt.title("Mean reward distribution by shareability level")
     plt.xticks(rotation=30, ha="right")
     plt.tight_layout()

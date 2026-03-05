@@ -216,7 +216,7 @@ def plot_average_bankruptcy_with_ci(summary_df: pd.DataFrame, output_path: Path)
     ax.errorbar(x, means_pct, yerr=ci_pct, fmt="none", ecolor="black", capsize=4)
     ax.set_xticks(x)
     ax.set_xticklabels(ordered["Agent Type"], rotation=0)
-    ax.set_ylabel("Average Bankruptcy Rate (%)")
+    ax.set_ylabel("Average Bankruptcy Rate (%)", fontsize="large")
     ax.set_ylim(bottom=0)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
 
@@ -248,8 +248,8 @@ def plot_average_capital_with_ci(summary_df: pd.DataFrame, output_path: Path) ->
         ax.plot(x, y, label=agent_type, color=color, linewidth=2)
         ax.fill_between(x, y - ci, y + ci, color=color, alpha=0.2)
 
-    ax.set_ylabel("Average Capital")
-    ax.set_xlabel("Micro Time Step")
+    ax.set_ylabel("Average Capital", fontsize="large")
+    ax.set_xlabel("Micro Time Step", fontsize="large")
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.legend(fontsize="large")
 
