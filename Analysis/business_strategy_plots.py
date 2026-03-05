@@ -35,8 +35,12 @@ def load_data(zip_path: Path, csv_name: str) -> pd.DataFrame:
 
 
 def discover_zip_files(zip_parent_dir: Path) -> list[Path]:
-    """Return all ZIP files under ``zip_parent_dir`` (recursive)."""
-    return sorted(path for path in zip_parent_dir.rglob("*.zip") if path.is_file())
+    """Return ZIP files under ``zip_parent_dir`` whose path includes ``output``."""
+    return sorted(
+        path
+        for path in zip_parent_dir.rglob("*.zip")
+        if path.is_file() and "output" in str(path).lower()
+    )
 
 
 def load_and_concat_data_from_zips(zip_paths: list[Path], csv_name: str) -> pd.DataFrame:
