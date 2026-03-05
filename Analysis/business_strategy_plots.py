@@ -34,6 +34,40 @@ def load_data(zip_path: Path, csv_name: str) -> pd.DataFrame:
             return pd.read_csv(csv_file)
 
 
+def discover_zip_files(zip_parent_dir: Path) -> list[Path]:
+    """Return ZIP files under ``zip_parent_dir`` whose path includes ``output``."""
+    return sorted(
+        path
+        for path in zip_parent_dir.rglob("*.zip")
+        if path.is_file() and "output" in str(path).lower()
+    )
+
+
+def load_and_concat_data_from_zips(zip_paths: list[Path], csv_name: str) -> pd.DataFrame:
+    """Load ``csv_name`` from each ZIP and concatenate into one dataframe.
+
+    To keep simulation identifiers unique across archives, each loaded dataframe
+    receives an offset that starts at the next available global simulation id.
+    """
+    combined_frames: list[pd.DataFrame] = []
+    next_sim_id = 0
+    for zip_path in zip_paths:
+        frame = load_data(zip_path, csv_name)
+        if "Sim" in frame.columns:
+            frame = frame.copy()
+            # Normalize per-archive simulation ids so they always start at 0
+            # before shifting into the global id space.
+            frame["Sim"] = frame["Sim"] - int(frame["Sim"].min()) + next_sim_id
+            # Advance to the next free global simulation id.
+            next_sim_id = int(frame["Sim"].max()) + 1
+        combined_frames.append(frame)
+
+    if not combined_frames:
+        raise ValueError("No ZIP files were loaded.")
+
+    return pd.concat(combined_frames, ignore_index=True)
+
+
 SUBSCRIPT_DIGITS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 
 
@@ -989,7 +1023,12 @@ def main() -> None:
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Business strategy plotting utilities")
-    parser.add_argument("--zip-path", type=Path, required=True, help="Path to the ZIP file containing the output data")
+    parser.add_argument("--zip-path", type=Path, help="Path to a single ZIP file containing the output data")
+    parser.add_argument(
+        "--zip-parent-dir",
+        type=Path,
+        help="Path to a parent directory; all ZIP files below it will be loaded recursively.",
+    )
     parser.add_argument("--master-output-file-name", required=True, help="Name of master output CSV file inside the ZIP")
     parser.add_argument("--market-overlap-file-name", required=True, help="Name of market overlap CSV file inside the ZIP")
     parser.add_argument(
@@ -1019,8 +1058,22 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Read in the master output CSV
-    df = load_data(args.zip_path, args.master_output_file_name)
+    if (args.zip_path is None) == (args.zip_parent_dir is None):
+        parser.error("Provide exactly one of --zip-path or --zip-parent-dir.")
+
+    if args.zip_parent_dir is not None:
+        zip_paths = discover_zip_files(args.zip_parent_dir)
+        if not zip_paths:
+            parser.error(f"No ZIP files found under {args.zip_parent_dir}")
+        df = load_and_concat_data_from_zips(zip_paths, args.master_output_file_name)
+        summary_output_path = args.zip_parent_dir / "combined_summary_statistics.csv"
+    else:
+        zip_paths = [args.zip_path]
+        df = load_data(args.zip_path, args.master_output_file_name)
+        summary_output_path = (
+            args.zip_path.parent / f"{args.zip_path.stem}_summary_statistics.csv"
+        )
+
     if args.single_simulation is not None:
         available_simulations = df["Sim"].unique()
         if args.single_simulation not in available_simulations:
@@ -1038,7 +1091,6 @@ def main() -> None:
         df = add_agent_type_subscripts(df)
 
     summary_stats = build_summary_statistics(df)
-    summary_output_path = args.zip_path.parent / f"{args.zip_path.stem}_summary_statistics.csv"
     summary_stats.to_csv(summary_output_path, index=False)
 
     if not args.stats_only:
@@ -1067,8 +1119,7 @@ def main() -> None:
 
     # Heatmap utilities require additional overlap data and are not executed by default.
     if args.plot_heatmaps and not args.stats_only:
-        zip_filename = Path(args.zip_path)
-        output = load_data(zip_filename, args.master_output_file_name)
+        output = load_and_concat_data_from_zips(zip_paths, args.master_output_file_name)
         if args.single_simulation is not None:
             output = output[output["Sim"] == args.single_simulation].copy()
         plot_market_agent_type_heatmap(output, step_interval=5)
