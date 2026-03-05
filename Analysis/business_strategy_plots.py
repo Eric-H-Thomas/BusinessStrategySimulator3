@@ -244,7 +244,7 @@ def avg_bankruptcy(df: pd.DataFrame, clear_previous: bool = True) -> plt.Figure:
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.set_ylabel("Percentage of Simulations Ending in Bankruptcy")
+    ax.set_ylabel("Percentage of Simulations Ending in Bankruptcy", fontsize="large")
     ax.set_ylim(0, 100)
     type_to_color = {
         "AI": "#79AEA3",
@@ -278,7 +278,7 @@ def avg_bankruptcy_various_sophisticated_agent_types(
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.set_ylabel("Percentage of Simulations Ending in Bankruptcy")
+    ax.set_ylabel("Percentage of Simulations Ending in Bankruptcy", fontsize="large")
     ax.set_ylim(0, 100)
     type_to_color = {
         "AI": "#79AEA3",
@@ -494,7 +494,7 @@ def performance_summary_std_error(
                     alpha=0.2,
                 )
 
-        ax.set_ylabel(metric)
+        ax.set_ylabel(metric, fontsize="large")
         ax.grid(True, linestyle="--", alpha=0.7)
 
         if idx == 0:
@@ -518,7 +518,7 @@ def performance_summary_std_error(
         )
 
     for ax in axes:
-        ax.set_xlabel("Macrostep")
+        ax.set_xlabel("Macrostep", fontsize="large")
 
     plt.tight_layout(rect=[0, 0, 1, 0.93 if show_std_error else 1])
     return fig
@@ -540,8 +540,8 @@ def plot_cumulative_capital(
         df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.set_ylabel("Average Capital")
-    ax.set_xlabel("Micro Time Step")
+    ax.set_ylabel("Average Capital", fontsize="large")
+    ax.set_xlabel("Micro Time Step", fontsize="large")
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
 
@@ -592,8 +592,8 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
         df = aggregate_data_with_std(df)
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.set_ylabel("Average Capital")
-    ax.set_xlabel("Micro Time Step")
+    ax.set_ylabel("Average Capital", fontsize="large")
+    ax.set_xlabel("Micro Time Step", fontsize="large")
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
 
@@ -771,8 +771,8 @@ def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, s
         title = f'Agent Type-Market Presence Over Time (Averaged Over {step_interval} Timesteps) in Simulation {sim}'
 
     plt.title(title)
-    plt.xlabel('Time Step Intervals')
-    plt.ylabel('Agent Type, Market')
+    plt.xlabel('Time Step Intervals', fontsize='large')
+    plt.ylabel('Agent Type, Market', fontsize='large')
     plt.tight_layout()
     plt.show()
 
@@ -825,8 +825,8 @@ def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, s
         title = f'Market-Agent Type Presence Over Time (Averaged Over {step_interval} Timesteps) in Simulation {sim}'
 
     plt.title(title)
-    plt.xlabel('Time Step Intervals')
-    plt.ylabel('Market, Agent Type')
+    plt.xlabel('Time Step Intervals', fontsize='large')
+    plt.ylabel('Market, Agent Type', fontsize='large')
     plt.tight_layout()
     plt.show()
 
@@ -971,8 +971,8 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
         ax.set_xticklabels(tick_labels, rotation=90)
 
     # Labels only (no title by request).
-    plt.xlabel('Time Step')
-    plt.ylabel('Market #', labelpad=30)
+    plt.xlabel('Time Step', fontsize='large')
+    plt.ylabel('Market #', labelpad=30, fontsize='large')
     plt.tight_layout()
     plt.subplots_adjust(left=0.17)
     plt.show()
@@ -1025,8 +1025,8 @@ def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
         title = f'Market-Firm Presence Over Time (Averaged Over {step_interval} Timesteps) in Simulation {sim}'
 
     plt.title(title)
-    plt.xlabel('Time Step Intervals')
-    plt.ylabel('Market, Firm')
+    plt.xlabel('Time Step Intervals', fontsize='large')
+    plt.ylabel('Market, Firm', fontsize='large')
     plt.tight_layout()
     plt.show()
 
