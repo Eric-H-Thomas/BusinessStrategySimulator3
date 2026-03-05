@@ -1,6 +1,7 @@
 """Plotting utilities for analyzing business strategy simulation results."""
 
 import argparse
+import sys
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
@@ -9,6 +10,11 @@ import seaborn as sns
 import re
 import zipfile
 from pathlib import Path
+
+
+def log_progress(message: str) -> None:
+    """Print a lightweight progress message for long-running plot workflows."""
+    print(f"[progress] {message}", file=sys.stderr, flush=True)
 
 
 def load_data(zip_path: Path, csv_name: str) -> pd.DataFrame:
@@ -51,7 +57,10 @@ def load_and_concat_data_from_zips(zip_paths: list[Path], csv_name: str) -> pd.D
     """
     combined_frames: list[pd.DataFrame] = []
     next_sim_id = 0
-    for zip_path in zip_paths:
+    total_archives = len(zip_paths)
+    log_progress(f"Loading '{csv_name}' from {total_archives} ZIP archive(s)...")
+    for index, zip_path in enumerate(zip_paths, start=1):
+        log_progress(f"Reading archive {index}/{total_archives}: {zip_path.name}")
         frame = load_data(zip_path, csv_name)
         if "Sim" in frame.columns:
             frame = frame.copy()
@@ -65,7 +74,11 @@ def load_and_concat_data_from_zips(zip_paths: list[Path], csv_name: str) -> pd.D
     if not combined_frames:
         raise ValueError("No ZIP files were loaded.")
 
-    return pd.concat(combined_frames, ignore_index=True)
+    concatenated = pd.concat(combined_frames, ignore_index=True)
+    log_progress(
+        f"Finished loading '{csv_name}'. Combined rows: {len(concatenated):,}."
+    )
+    return concatenated
 
 
 SUBSCRIPT_DIGITS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
@@ -1057,24 +1070,30 @@ def main() -> None:
         help="Skip plot generation and only write summary statistics to CSV.",
     )
     args = parser.parse_args()
+    log_progress("Starting business strategy plotting workflow.")
 
     if (args.zip_path is None) == (args.zip_parent_dir is None):
         parser.error("Provide exactly one of --zip-path or --zip-parent-dir.")
 
     if args.zip_parent_dir is not None:
+        log_progress(f"Discovering ZIP archives under: {args.zip_parent_dir}")
         zip_paths = discover_zip_files(args.zip_parent_dir)
         if not zip_paths:
             parser.error(f"No ZIP files found under {args.zip_parent_dir}")
+        log_progress(f"Discovered {len(zip_paths)} ZIP archive(s).")
         df = load_and_concat_data_from_zips(zip_paths, args.master_output_file_name)
         summary_output_path = args.zip_parent_dir / "combined_summary_statistics.csv"
     else:
         zip_paths = [args.zip_path]
+        log_progress(f"Loading master output from ZIP: {args.zip_path}")
         df = load_data(args.zip_path, args.master_output_file_name)
         summary_output_path = (
             args.zip_path.parent / f"{args.zip_path.stem}_summary_statistics.csv"
         )
+        log_progress(f"Loaded {len(df):,} row(s) from master output file.")
 
     if args.single_simulation is not None:
+        log_progress(f"Filtering to simulation: {args.single_simulation}")
         available_simulations = df["Sim"].unique()
         if args.single_simulation not in available_simulations:
             parser.error(
@@ -1082,26 +1101,37 @@ def main() -> None:
                 f"Available simulations: {sorted(available_simulations)}"
             )
         df = df[df["Sim"] == args.single_simulation].copy()
+        log_progress(f"Rows remaining after simulation filter: {len(df):,}.")
+    log_progress("Normalizing agent type labels for plotting.")
     df = (
         sort_by_agent_type_various_sophisticated_agent_types(df)
         if args.various_sophisticated_agent_types
         else sort_by_agent_type(df)
     )
     if args.single_simulation is not None:
+        log_progress("Adding per-agent subscripts for single-simulation plots.")
         df = add_agent_type_subscripts(df)
 
+    log_progress("Building summary statistics table.")
     summary_stats = build_summary_statistics(df)
     summary_stats.to_csv(summary_output_path, index=False)
+    log_progress(f"Summary statistics written to: {summary_output_path}")
 
     if not args.stats_only:
+        log_progress("Generating core plots (1/3 to 3/3).")
         # Generate core plots
         if args.various_sophisticated_agent_types:
+            log_progress("Creating plot 1/3: average bankruptcy (various sophisticated types).")
             _fig1 = avg_bankruptcy_various_sophisticated_agent_types(df, clear_previous=True)
+            log_progress("Creating plot 2/3: cumulative capital (various sophisticated types).")
             _fig2 = plot_cumulative_capital_various_sophisticated_agent_types(df, clear_previous=False)
         else:
+            log_progress("Creating plot 1/3: average bankruptcy.")
             _fig1 = avg_bankruptcy(df, clear_previous=True)
+            log_progress("Creating plot 2/3: cumulative capital.")
             _fig2 = plot_cumulative_capital(df, clear_previous=False)
 
+        log_progress("Creating plot 3/3: performance summary with standard error.")
         _fig3 = performance_summary_std_error(
             df,
             clear_previous=False,
@@ -1109,28 +1139,43 @@ def main() -> None:
         )
 
         if args.output_dir is not None:
+            log_progress(f"Saving plots to output directory: {args.output_dir}")
             args.output_dir.mkdir(parents=True, exist_ok=True)
             _fig1.savefig(args.output_dir / "avg_bankruptcy.png", dpi=300)
             _fig2.savefig(args.output_dir / "cumulative_capital.png", dpi=300)
             _fig3.savefig(args.output_dir / "performance_summary_std_error.png", dpi=300)
+            log_progress("Core plot files saved.")
         else:
             # Show all open figures at once (prevents later plots from closing earlier ones)
+            log_progress("Displaying core plots interactively.")
             plt.show()
 
     # Heatmap utilities require additional overlap data and are not executed by default.
     if args.plot_heatmaps and not args.stats_only:
+        log_progress("Generating heatmaps (1/3 to 3/3).")
         output = load_and_concat_data_from_zips(zip_paths, args.master_output_file_name)
         if args.single_simulation is not None:
             output = output[output["Sim"] == args.single_simulation].copy()
+            log_progress(
+                f"Heatmap data filtered to simulation {args.single_simulation}: {len(output):,} row(s)."
+            )
+        log_progress("Creating heatmap 1/3: market by agent type.")
         plot_market_agent_type_heatmap(output, step_interval=5)
         if args.output_dir is not None:
             plt.gcf().savefig(args.output_dir / "market_agent_type_heatmap.png", dpi=300)
+            log_progress("Saved heatmap 1/3.")
+        log_progress("Creating heatmap 2/3: firm by market (with agent-type bands).")
         plot_firm_market_heatmap(output)
         if args.output_dir is not None:
             plt.gcf().savefig(args.output_dir / "firm_market_heatmap.png", dpi=300)
+            log_progress("Saved heatmap 2/3.")
+        log_progress("Creating heatmap 3/3: market by firm.")
         plot_market_firm_heatmap(output, step_interval=5)
         if args.output_dir is not None:
             plt.gcf().savefig(args.output_dir / "market_firm_heatmap.png", dpi=300)
+            log_progress("Saved heatmap 3/3.")
+
+    log_progress("Workflow finished.")
 
 if __name__ == "__main__":
     main()
