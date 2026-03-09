@@ -59,10 +59,11 @@ def load_and_concat_data_from_zips(zip_paths: list[Path], csv_name: str) -> pd.D
     next_sim_id = 0
     total_archives = len(zip_paths)
     log_progress(f"Loading '{csv_name}' from {total_archives} ZIP archive(s)...")
+    should_reindex_simulations = total_archives > 1
     for index, zip_path in enumerate(zip_paths, start=1):
         log_progress(f"Reading archive {index}/{total_archives}: {zip_path.name}")
         frame = load_data(zip_path, csv_name)
-        if "Sim" in frame.columns:
+        if should_reindex_simulations and "Sim" in frame.columns:
             frame = frame.copy()
             # Normalize per-archive simulation ids so they always start at 0
             # before shifting into the global id space.
