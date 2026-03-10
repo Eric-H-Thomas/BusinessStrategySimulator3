@@ -36,50 +36,55 @@ def summarize_ends_file(
     bankruptcy_tol: float,
 ) -> list[dict[str, object]]:
     rows, fieldnames = read_csv_rows(path)
-    required = {"Sim", "Step", "Agent Type", "Capital"}
+    required = {"Sim", "Step", "Firm", "Agent Type", "Capital"}
     missing = required - set(fieldnames)
     if missing:
         raise ValueError(f"{path} is missing required columns: {sorted(missing)}")
 
-    # Identify rows at min/max step for each simulation.
-    min_step_by_sim: dict[str, float] = {}
-    max_step_by_sim: dict[str, float] = {}
+    # Collapse duplicate market rows first so each sim/step/firm/agent contributes once.
+    dedup_buckets: dict[tuple[str, float, str, str], list[float]] = {}
     for row in rows:
-        sim = row["Sim"]
-        step = float(row["Step"])
-        min_step_by_sim[sim] = step if sim not in min_step_by_sim else min(min_step_by_sim[sim], step)
-        max_step_by_sim[sim] = step if sim not in max_step_by_sim else max(max_step_by_sim[sim], step)
+        key = (row["Sim"], float(row["Step"]), row["Firm"], row["Agent Type"])
+        dedup_buckets.setdefault(key, []).append(float(row["Capital"]))
 
-    # Group to simulation+agent to derive start/end capital for growth calculations.
-    sim_agent_starts: dict[tuple[str, str], list[float]] = {}
-    sim_agent_ends: dict[tuple[str, str], list[float]] = {}
+    dedup_rows: list[tuple[str, float, str, str, float]] = [
+        (sim, step, firm, agent_type, mean(capitals))
+        for (sim, step, firm, agent_type), capitals in dedup_buckets.items()
+    ]
 
-    # Track final-row bankruptcy flags at row granularity for each agent type.
+    # Identify start/end step for each firm trajectory.
+    min_step_by_firm: dict[tuple[str, str, str], float] = {}
+    max_step_by_firm: dict[tuple[str, str, str], float] = {}
+    for sim, step, firm, agent_type, _ in dedup_rows:
+        key = (sim, firm, agent_type)
+        min_step_by_firm[key] = step if key not in min_step_by_firm else min(min_step_by_firm[key], step)
+        max_step_by_firm[key] = step if key not in max_step_by_firm else max(max_step_by_firm[key], step)
+
+    # Track per-firm start/end capitals for growth calculations.
+    start_capital_by_firm: dict[tuple[str, str, str], float] = {}
+    end_capital_by_firm: dict[tuple[str, str, str], float] = {}
+
+    # Track bankruptcy flags at per-firm final-step granularity.
     final_bankruptcy_flags_by_agent: dict[str, list[float]] = {}
 
-    for row in rows:
-        sim = row["Sim"]
-        agent_type = row["Agent Type"]
-        step = float(row["Step"])
-        capital = float(row["Capital"])
+    for sim, step, firm, agent_type, capital in dedup_rows:
+        firm_key = (sim, firm, agent_type)
 
-        if step == min_step_by_sim[sim]:
-            sim_agent_starts.setdefault((sim, agent_type), []).append(capital)
+        if step == min_step_by_firm[firm_key]:
+            start_capital_by_firm[firm_key] = capital
 
-        if step == max_step_by_sim[sim]:
-            sim_agent_ends.setdefault((sim, agent_type), []).append(capital)
+        if step == max_step_by_firm[firm_key]:
+            end_capital_by_firm[firm_key] = capital
             is_bankrupt = abs(capital - bankruptcy_value) <= bankruptcy_tol
             final_bankruptcy_flags_by_agent.setdefault(agent_type, []).append(1.0 if is_bankrupt else 0.0)
 
     growth_rates_by_agent: dict[str, list[float]] = {}
-    for key, end_vals in sim_agent_ends.items():
-        sim, agent_type = key
-        start_vals = sim_agent_starts.get((sim, agent_type), [])
-        if not start_vals:
+    for firm_key, end_capital in end_capital_by_firm.items():
+        _, _, agent_type = firm_key
+        start_capital = start_capital_by_firm.get(firm_key)
+        if start_capital is None:
             continue
 
-        start_capital = mean(start_vals)
-        end_capital = mean(end_vals)
         if start_capital == 0.0:
             continue
         growth = (end_capital - start_capital) / start_capital
