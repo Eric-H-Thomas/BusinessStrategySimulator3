@@ -14,10 +14,13 @@ from pathlib import Path
 
 MASTER_OUTPUT_FILENAME = "MasterOutput.csv"
 ENDS_FILENAME = "MasterOutputEnds.csv"
+ROW_PROGRESS_INTERVAL = 100_000
+FILE_PROGRESS_INTERVAL = 10
 
 
 def extract_ends(master_output_path: Path) -> Path:
     """Write a MasterOutputEnds.csv next to a MasterOutput.csv file."""
+    print(f"Processing file: {master_output_path}")
     with master_output_path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         fieldnames = reader.fieldnames
@@ -30,9 +33,11 @@ def extract_ends(master_output_path: Path) -> Path:
             )
         rows = list(reader)
 
+    print(f"Loaded {len(rows):,} rows from {master_output_path}")
+
     min_step_by_sim: dict[str, float] = {}
     max_step_by_sim: dict[str, float] = {}
-    for row in rows:
+    for index, row in enumerate(rows, start=1):
         sim = row["Sim"]
         step = float(row["Step"])
         prev_min = min_step_by_sim.get(sim)
@@ -41,6 +46,11 @@ def extract_ends(master_output_path: Path) -> Path:
             min_step_by_sim[sim] = step
         if prev_max is None or step > prev_max:
             max_step_by_sim[sim] = step
+        if index % ROW_PROGRESS_INTERVAL == 0:
+            print(
+                f"  Progress: evaluated {index:,}/{len(rows):,} rows "
+                f"in {master_output_path.name}"
+            )
 
     end_rows = [
         row
@@ -53,6 +63,11 @@ def extract_ends(master_output_path: Path) -> Path:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(end_rows)
+
+    print(
+        f"Finished {master_output_path.name}: kept {len(end_rows):,} end rows "
+        f"across {len(min_step_by_sim):,} simulations"
+    )
 
     return output_path
 
@@ -85,10 +100,13 @@ def main() -> None:
         return
 
     written = 0
-    for path in master_paths:
+    total_files = len(master_paths)
+    for index, path in enumerate(master_paths, start=1):
         output_path = extract_ends(path)
         written += 1
         print(f"Wrote: {output_path}")
+        if index % FILE_PROGRESS_INTERVAL == 0 or index == total_files:
+            print(f"File progress: {index}/{total_files} complete")
 
     print(f"Done. Wrote {written} {ENDS_FILENAME} files.")
 
