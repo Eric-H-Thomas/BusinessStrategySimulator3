@@ -129,14 +129,14 @@ def confidence_interval_95(values: pd.Series) -> float:
 
 
 def write_average_summary_csv(summary_paths: list[Path], output_path: Path) -> None:
-    """Average summary-stat rows across all per-ZIP summary CSV files."""
+    """Average and sample std-dev rows across all per-ZIP summary CSV files."""
     summary_frames = [pd.read_csv(path) for path in summary_paths]
     combined = pd.concat(summary_frames, ignore_index=True)
-    averaged = (
-        combined.groupby("Statistic", as_index=False)["Value"]
-        .mean()
-        .sort_values("Statistic")
+    averaged = combined.groupby("Statistic", as_index=False)["Value"].agg(
+        Value="mean",
+        SampleStdDev=lambda values: values.std(ddof=1),
     )
+    averaged = averaged.sort_values("Statistic")
     averaged.to_csv(output_path, index=False)
 
 
