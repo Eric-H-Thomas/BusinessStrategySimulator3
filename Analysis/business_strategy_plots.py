@@ -638,7 +638,7 @@ def plot_cumulative_capital_various_sophisticated_agent_types(
     return fig
 
 
-def calculate_percent_change(df: pd.DataFrame) -> dict:
+def calculate_percent_change(df: pd.DataFrame, starting_capital: float) -> dict:
     """Return percent change in capital from start to end for each agent type."""
     percent_changes = {}
 
@@ -650,8 +650,8 @@ def calculate_percent_change(df: pd.DataFrame) -> dict:
     for agent_type in df["Agent Type"].unique():
         agent_df = df[df["Agent Type"] == agent_type]
 
-        initial_capital = agent_df.iloc[0]["Capital_mean"]
         final_capital = agent_df.iloc[-1]["Capital_mean"]
+        initial_capital = starting_capital
 
         percent_change = ((final_capital - initial_capital) / initial_capital) * 100
         percent_changes[agent_type] = percent_change
@@ -659,7 +659,7 @@ def calculate_percent_change(df: pd.DataFrame) -> dict:
     return percent_changes
 
 
-def normalize_percent_change(df: pd.DataFrame) -> dict:
+def normalize_percent_change(df: pd.DataFrame, starting_capital: float) -> dict:
     """Return relative growth in capital for each agent type."""
     normalized_values = {}
 
@@ -670,8 +670,8 @@ def normalize_percent_change(df: pd.DataFrame) -> dict:
     for agent_type in df["Agent Type"].unique():
         agent_df = df[df["Agent Type"] == agent_type]
 
-        initial_capital = agent_df.iloc[0]["Capital_mean"]
         final_capital = agent_df.iloc[-1]["Capital_mean"]
+        initial_capital = starting_capital
 
         normalized_cap = (final_capital - initial_capital) / initial_capital
         normalized_values[agent_type] = normalized_cap
@@ -684,13 +684,13 @@ def calculate_avg_bankruptcy_rate(df: pd.DataFrame) -> dict:
     return bankruptcy_rate_by_agent_type(df).to_dict()
 
 
-def build_summary_statistics(df: pd.DataFrame) -> pd.DataFrame:
+def build_summary_statistics(df: pd.DataFrame, starting_capital: float) -> pd.DataFrame:
     """Build a summary statistics table suitable for CSV export."""
     rows = []
 
-    percent_changes = calculate_percent_change(df)
+    percent_changes = calculate_percent_change(df, starting_capital)
     avg_bankruptcy_rates = calculate_avg_bankruptcy_rate(df)
-    normalized_changes = normalize_percent_change(df)
+    normalized_changes = normalize_percent_change(df, starting_capital)
 
     for agent_type, pct_change in percent_changes.items():
         rows.append(
@@ -1070,8 +1070,17 @@ def main() -> None:
         action="store_true",
         help="Skip plot generation and only write summary statistics to CSV.",
     )
+    parser.add_argument(
+        "--starting-capital",
+        required=True,
+        type=float,
+        help="Starting capital at the beginning of the simulation.",
+    )
     args = parser.parse_args()
     log_progress("Starting business strategy plotting workflow.")
+
+    if args.starting_capital == 0:
+        parser.error("--starting-capital must be non-zero.")
 
     if (args.zip_path is None) == (args.zip_parent_dir is None):
         parser.error("Provide exactly one of --zip-path or --zip-parent-dir.")
@@ -1114,7 +1123,7 @@ def main() -> None:
         df = add_agent_type_subscripts(df)
 
     log_progress("Building summary statistics table.")
-    summary_stats = build_summary_statistics(df)
+    summary_stats = build_summary_statistics(df, args.starting_capital)
     summary_stats.to_csv(summary_output_path, index=False)
     log_progress(f"Summary statistics written to: {summary_output_path}")
 
