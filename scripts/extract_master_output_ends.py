@@ -31,41 +31,47 @@ def extract_ends(master_output_path: Path) -> Path:
                 f"{master_output_path} must contain 'Sim' and 'Step' columns. "
                 f"Found columns: {fieldnames}"
             )
-        rows = list(reader)
-
-    print(f"Loaded {len(rows):,} rows from {master_output_path}")
 
     min_step_by_sim: dict[str, float] = {}
     max_step_by_sim: dict[str, float] = {}
-    for index, row in enumerate(rows, start=1):
-        sim = row["Sim"]
-        step = float(row["Step"])
-        prev_min = min_step_by_sim.get(sim)
-        prev_max = max_step_by_sim.get(sim)
-        if prev_min is None or step < prev_min:
-            min_step_by_sim[sim] = step
-        if prev_max is None or step > prev_max:
-            max_step_by_sim[sim] = step
-        if index % ROW_PROGRESS_INTERVAL == 0:
-            print(
-                f"  Progress: evaluated {index:,}/{len(rows):,} rows "
-                f"in {master_output_path.name}"
-            )
+    total_rows = 0
+    with master_output_path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        for total_rows, row in enumerate(reader, start=1):
+            sim = row["Sim"]
+            step = float(row["Step"])
+            prev_min = min_step_by_sim.get(sim)
+            prev_max = max_step_by_sim.get(sim)
+            if prev_min is None or step < prev_min:
+                min_step_by_sim[sim] = step
+            if prev_max is None or step > prev_max:
+                max_step_by_sim[sim] = step
+            if total_rows % ROW_PROGRESS_INTERVAL == 0:
+                print(f"  Progress: evaluated {total_rows:,} rows in {master_output_path.name}")
 
-    end_rows = [
-        row
-        for row in rows
-        if float(row["Step"]) in (min_step_by_sim[row["Sim"]], max_step_by_sim[row["Sim"]])
-    ]
+    print(
+        f"First pass complete: scanned {total_rows:,} rows across "
+        f"{len(min_step_by_sim):,} simulations"
+    )
 
     output_path = master_output_path.with_name(ENDS_FILENAME)
+    kept_rows = 0
     with output_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(end_rows)
+        with master_output_path.open(newline="", encoding="utf-8") as source_handle:
+            source_reader = csv.DictReader(source_handle)
+            for source_rows, row in enumerate(source_reader, start=1):
+                sim = row["Sim"]
+                step = float(row["Step"])
+                if step in (min_step_by_sim[sim], max_step_by_sim[sim]):
+                    writer.writerow(row)
+                    kept_rows += 1
+                if source_rows % ROW_PROGRESS_INTERVAL == 0:
+                    print(f"  Progress: wrote scan {source_rows:,} rows in {master_output_path.name}")
 
     print(
-        f"Finished {master_output_path.name}: kept {len(end_rows):,} end rows "
+        f"Finished {master_output_path.name}: kept {kept_rows:,} end rows "
         f"across {len(min_step_by_sim):,} simulations"
     )
 
