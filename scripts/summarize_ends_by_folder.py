@@ -34,6 +34,7 @@ def read_csv_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
 
 def summarize_endings_file(
     path: Path,
+    starting_capital: float,
     bankruptcy_value: float,
     bankruptcy_tol: float,
 ) -> list[dict[str, object]]:
@@ -54,22 +55,16 @@ def summarize_endings_file(
         for (sim, step, firm, agent_type), capitals in dedup_buckets.items()
     ]
 
-    min_step_by_firm: dict[tuple[str, str, str], float] = {}
     max_step_by_firm: dict[tuple[str, str, str], float] = {}
     for sim, step, firm, agent_type, _ in dedup_rows:
         key = (sim, firm, agent_type)
-        min_step_by_firm[key] = step if key not in min_step_by_firm else min(min_step_by_firm[key], step)
         max_step_by_firm[key] = step if key not in max_step_by_firm else max(max_step_by_firm[key], step)
 
-    start_capital_by_firm: dict[tuple[str, str, str], float] = {}
     end_capital_by_firm: dict[tuple[str, str, str], float] = {}
     bankruptcy_flags_by_agent: dict[str, list[float]] = {}
 
     for sim, step, firm, agent_type, capital in dedup_rows:
         firm_key = (sim, firm, agent_type)
-
-        if step == min_step_by_firm[firm_key]:
-            start_capital_by_firm[firm_key] = capital
 
         if step == max_step_by_firm[firm_key]:
             end_capital_by_firm[firm_key] = capital
@@ -79,10 +74,9 @@ def summarize_endings_file(
     growth_rates_by_agent: dict[str, list[float]] = {}
     for firm_key, end_capital in end_capital_by_firm.items():
         _, _, agent_type = firm_key
-        start_capital = start_capital_by_firm.get(firm_key)
-        if start_capital in (None, 0.0):
+        if starting_capital == 0.0:
             continue
-        growth = (end_capital - start_capital) / start_capital
+        growth = (end_capital - starting_capital) / starting_capital
         growth_rates_by_agent.setdefault(agent_type, []).append(growth)
 
     all_agent_types = sorted(set(bankruptcy_flags_by_agent) | set(growth_rates_by_agent))
@@ -121,6 +115,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("folder_a", type=Path, help="Top-level folder A.")
     parser.add_argument(
+        "starting_capital",
+        type=float,
+        help="Starting capital at the beginning of the simulation.",
+    )
+    parser.add_argument(
         "--bankruptcy-value",
         type=float,
         default=-1e-09,
@@ -158,6 +157,7 @@ def main() -> None:
             per_file_rows.extend(
                 summarize_endings_file(
                     endings_path,
+                    starting_capital=args.starting_capital,
                     bankruptcy_value=args.bankruptcy_value,
                     bankruptcy_tol=args.bankruptcy_tol,
                 )
