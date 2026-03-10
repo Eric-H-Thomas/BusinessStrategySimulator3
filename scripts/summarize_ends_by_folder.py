@@ -32,11 +32,18 @@ def read_csv_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
         return list(reader), fieldnames
 
 
+def normalize_agent_type(agent_type: str, collapse_by_agent_type: bool) -> str:
+    if not collapse_by_agent_type:
+        return agent_type
+    return "".join(char for char in agent_type if not char.isdigit())
+
+
 def summarize_endings_file(
     path: Path,
     starting_capital: float,
     bankruptcy_value: float,
     bankruptcy_tol: float,
+    collapse_by_agent_type: bool,
 ) -> list[dict[str, object]]:
     rows, fieldnames = read_csv_rows(path)
     required = {"Sim", "Step", "Firm", "Agent Type", "Capital"}
@@ -47,7 +54,12 @@ def summarize_endings_file(
     # Collapse duplicate rows so each sim/step/firm/agent contributes once.
     dedup_buckets: dict[tuple[str, float, str, str], list[float]] = {}
     for row in rows:
-        key = (row["Sim"], float(row["Step"]), row["Firm"], row["Agent Type"])
+        key = (
+            row["Sim"],
+            float(row["Step"]),
+            row["Firm"],
+            normalize_agent_type(row["Agent Type"], collapse_by_agent_type),
+        )
         dedup_buckets.setdefault(key, []).append(float(row["Capital"]))
 
     dedup_rows: list[tuple[str, float, str, str, float]] = [
@@ -131,6 +143,11 @@ def parse_args() -> argparse.Namespace:
         default=1e-12,
         help="Absolute tolerance for bankruptcy-value comparisons.",
     )
+    parser.add_argument(
+        "--collapse-by-agent-type",
+        action="store_true",
+        help="Strip digits from agent types before aggregating (e.g., 0S/1S -> S).",
+    )
     return parser.parse_args()
 
 
@@ -160,6 +177,7 @@ def main() -> None:
                     starting_capital=args.starting_capital,
                     bankruptcy_value=args.bankruptcy_value,
                     bankruptcy_tol=args.bankruptcy_tol,
+                    collapse_by_agent_type=args.collapse_by_agent_type,
                 )
             )
 
