@@ -10,6 +10,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -71,7 +72,8 @@ def validate_inputs(df: pd.DataFrame, num_plots: int) -> list[int]:
 
 def save_heatmap_for_simulation(df: pd.DataFrame, sim_id: int, output_path: Path) -> None:
     sim_df = df[df["Sim"] == sim_id].copy()
-    plots.plot_firm_market_heatmap(sim_df, sim=sim_id)
+    with patch.object(plt, "show", return_value=None):
+        plots.plot_firm_market_heatmap(sim_df, sim=sim_id)
     plt.gcf().savefig(output_path, dpi=300)
     plt.close(plt.gcf())
 
