@@ -11,6 +11,7 @@ BusinessStrategySimulator3 is a research playground for studying market entry an
 - [Batch training helpers](#batch-training-helpers)
 - [Project layout](#project-layout)
 - [Further reading](#further-reading)
+- [Licensing](#licensing)
 
 ## Overview
 
@@ -79,3 +80,7 @@ BusinessStrategySimulator3/
 * [Hyperparameter sweep utilities](docs/hyperparameter_sweeps.md)
 
 The repository serves as a foundation for exploring how reinforcement learning can guide firms when entering or exiting markets.
+
+## Licensing
+
+Code in this repository is licensed under the MIT License (see the root `LICENSE` file). Data assets in `data/` are licensed under CC BY 4.0 (see `data/LICENSE`).
