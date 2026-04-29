@@ -81,6 +81,15 @@ BusinessStrategySimulator3/
 
 The repository serves as a foundation for exploring how reinforcement learning can guide firms when entering or exiting markets.
 
-## Licensing
+## Licensing and Data
 
-Code in this repository is licensed under the MIT License (see the root `LICENSE` file). Data assets in `data/` are licensed under CC BY 4.0 (see `data/LICENSE`).
+Code in this repository is licensed under the MIT License (see the root `LICENSE` file).
+
+The experimental dataset for the manuscript corresponding to this project is publicly available on Hugging Face:
+
+**Dataset:** https://huggingface.co/datasets/EricHeywoodThomas/market_entry_strategy_with_RL  
+**DOI:** https://doi.org/10.57967/hf/8605
+
+The dataset includes trained reinforcement learning agent artifacts, simulator configurations, training hyperparameters, and evaluation datasets.
+
+The dataset is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
