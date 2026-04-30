@@ -975,7 +975,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     if single_simulation:
         occupancy_legend = [
             patches.Patch(facecolor='#0d2466', edgecolor='black', label='All agents of type present'),
-            patches.Patch(facecolor='#4fb0bf', edgecolor='black', label='One of two agents present (N/A for AI)'),
+            patches.Patch(facecolor='#4fb0bf', edgecolor='black', label='One of two agents present (N/A for AI; there is just one AI agent)'),
             patches.Patch(facecolor='#ecebcf', edgecolor='black', label='No agents of type present'),
         ]
         occupancy_legend_box = ax.legend(
