@@ -850,6 +850,21 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
     # Average over broad agent types and preserve each raw timestep.
     data = sort_by_agent_type(data.copy())
+    if single_simulation:
+        agent_counts = data.groupby('Agent Type')['Firm'].nunique()
+        unsupported_agent_counts = agent_counts[agent_counts > 2]
+        if not unsupported_agent_counts.empty:
+            count_summary = ', '.join(
+                f'{agent_type}: {count}'
+                for agent_type, count in unsupported_agent_counts.items()
+            )
+            raise ValueError(
+                'plot_firm_market_heatmap supports the single-simulation occupancy '
+                'legend only when each agent type has at most two agents. '
+                f'Found more than two agents for: {count_summary}. '
+                'The legend would need to be updated for that case.'
+            )
+
     agent_type_order = ['Sophisticated', 'Naive', 'AI']
     data.loc[:, 'Agent Type'] = pd.Categorical(
         data['Agent Type'],
@@ -874,9 +889,14 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     plt.figure(figsize=(15, 12))
     if single_simulation:
         # Discrete occupancy states for a single simulation:
-        # 0.0 => none present, 0.5 => one of two agents present, 1.0 => all agents present.
+        # 0.0 => none present, 0.0 < value < 1.0 => partial, 1.0 => all agents present.
+        # The tiny positive boundary keeps exactly zero in the "none" bin while
+        # mapping any nonzero occupancy below one to the partial-occupancy color.
         single_sim_cmap = mcolors.ListedColormap(['#ecebcf', '#4fb0bf', '#0d2466'])
-        single_sim_norm = mcolors.BoundaryNorm(boundaries=[-0.01, 0.25, 0.75, 1.01], ncolors=3)
+        single_sim_norm = mcolors.BoundaryNorm(
+            boundaries=[-0.01, np.nextafter(0.0, 1.0), 1.0, 1.01],
+            ncolors=3,
+        )
         ax = sns.heatmap(heatmap_data, cmap=single_sim_cmap, norm=single_sim_norm, cbar=False)
     else:
         ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Average Frequency in Market'})
@@ -975,7 +995,11 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     if single_simulation:
         occupancy_legend = [
             patches.Patch(facecolor='#0d2466', edgecolor='black', label='All agents of type present'),
-            patches.Patch(facecolor='#4fb0bf', edgecolor='black', label='One of two agents present (N/A for AI; there is just one AI agent)'),
+            patches.Patch(
+                facecolor='#4fb0bf',
+                edgecolor='black',
+                label='One of two agents present\n(N/A for AI; there is just one AI agent)',
+            ),
             patches.Patch(facecolor='#ecebcf', edgecolor='black', label='No agents of type present'),
         ]
         occupancy_legend_box = ax.legend(
@@ -987,12 +1011,13 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             frameon=True,
             fontsize='medium',
             title_fontsize='large',
-            alignment='left',
+            alignment='center',
             borderpad=0.4,
             labelspacing=0.4,
             handletextpad=0.7,
         )
         occupancy_legend_box.get_title().set_fontweight('bold')
+        occupancy_legend_box.get_title().set_ha('center')
 
     # Label x-axis ticks every 50 timesteps to reduce clutter.
     step_values = heatmap_data.columns.to_numpy()
@@ -1004,7 +1029,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
     # Labels only (no title by request).
     plt.xlabel('Time Step', fontsize='large')
-    plt.ylabel('Market #', labelpad=30, fontsize='large')
+    plt.ylabel('Market #', labelpad=8, fontsize='large')
     plt.tight_layout()
     plt.subplots_adjust(left=0.17)
     plt.show()
