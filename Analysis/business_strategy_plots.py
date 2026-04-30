@@ -987,6 +987,10 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             frameon=True,
             fontsize='medium',
             title_fontsize='large',
+            alignment='left',
+            borderpad=0.4,
+            labelspacing=0.4,
+            handletextpad=0.7,
         )
         occupancy_legend_box.get_title().set_fontweight('bold')
 
