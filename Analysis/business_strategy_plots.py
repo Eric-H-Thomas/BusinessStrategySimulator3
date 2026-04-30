@@ -845,6 +845,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     """
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
+    single_simulation = data['Sim'].nunique() == 1
 
     # Average over broad agent types and preserve each raw timestep.
     data = sort_by_agent_type(data.copy())
@@ -870,7 +871,14 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
 
     # Plot the heatmap
     plt.figure(figsize=(15, 12))
-    ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Average Frequency in Market'})
+    if single_simulation:
+        # Discrete occupancy states for a single simulation:
+        # 0.0 => none present, 0.5 => one of two agents present, 1.0 => all agents present.
+        single_sim_cmap = colors.ListedColormap(['#ecebcf', '#4fb0bf', '#0d2466'])
+        single_sim_norm = colors.BoundaryNorm(boundaries=[-0.01, 0.25, 0.75, 1.01], ncolors=3)
+        ax = sns.heatmap(heatmap_data, cmap=single_sim_cmap, norm=single_sim_norm, cbar=False)
+    else:
+        ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Average Frequency in Market'})
 
     # Add horizontal lines to separate each row.
     total_rows = heatmap_data.index.size
@@ -961,6 +969,21 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             color='black',
             linewidth=2.5,
             clip_on=False,
+        )
+
+    if single_simulation:
+        occupancy_legend = [
+            patches.Patch(facecolor='#0d2466', edgecolor='black', label='All agents of type present'),
+            patches.Patch(facecolor='#4fb0bf', edgecolor='black', label='One of two agents present (N/A for AI)'),
+            patches.Patch(facecolor='#ecebcf', edgecolor='black', label='No agents of type present'),
+        ]
+        ax.legend(
+            handles=occupancy_legend,
+            title='Single-simulation occupancy',
+            loc='upper left',
+            bbox_to_anchor=(1.02, 1.0),
+            borderaxespad=0,
+            frameon=True,
         )
 
     # Label x-axis ticks every 50 timesteps to reduce clutter.
