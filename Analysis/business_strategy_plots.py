@@ -975,17 +975,20 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     if single_simulation:
         occupancy_legend = [
             patches.Patch(facecolor='#0d2466', edgecolor='black', label='All agents of type present'),
-            patches.Patch(facecolor='#4fb0bf', edgecolor='black', label='One of two agents present (N/A for AI)'),
+            patches.Patch(facecolor='#4fb0bf', edgecolor='black', label='One of two agents present (N/A for AI; there is just one AI agent)'),
             patches.Patch(facecolor='#ecebcf', edgecolor='black', label='No agents of type present'),
         ]
-        ax.legend(
+        occupancy_legend_box = ax.legend(
             handles=occupancy_legend,
             title='Single-simulation occupancy',
             loc='upper left',
             bbox_to_anchor=(1.02, 1.0),
             borderaxespad=0,
             frameon=True,
+            fontsize='medium',
+            title_fontsize='large',
         )
+        occupancy_legend_box.get_title().set_fontweight('bold')
 
     # Label x-axis ticks every 50 timesteps to reduce clutter.
     step_values = heatmap_data.columns.to_numpy()
