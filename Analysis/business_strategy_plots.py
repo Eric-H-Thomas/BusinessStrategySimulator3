@@ -3,6 +3,7 @@
 import argparse
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
@@ -874,8 +875,8 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     if single_simulation:
         # Discrete occupancy states for a single simulation:
         # 0.0 => none present, 0.5 => one of two agents present, 1.0 => all agents present.
-        single_sim_cmap = colors.ListedColormap(['#ecebcf', '#4fb0bf', '#0d2466'])
-        single_sim_norm = colors.BoundaryNorm(boundaries=[-0.01, 0.25, 0.75, 1.01], ncolors=3)
+        single_sim_cmap = mcolors.ListedColormap(['#ecebcf', '#4fb0bf', '#0d2466'])
+        single_sim_norm = mcolors.BoundaryNorm(boundaries=[-0.01, 0.25, 0.75, 1.01], ncolors=3)
         ax = sns.heatmap(heatmap_data, cmap=single_sim_cmap, norm=single_sim_norm, cbar=False)
     else:
         ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Average Frequency in Market'})
