@@ -722,7 +722,12 @@ def build_summary_statistics(df: pd.DataFrame, starting_capital: float) -> pd.Da
 # The following heatmap utilities rely on additional market overlap data.
 # They are provided for completeness but are not invoked by default.
 
-def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
+def plot_agent_type_market_heatmap(
+    data: pd.DataFrame,
+    step_interval: int = 1,
+    sim: str = 'All',
+    show_plot: bool = True,
+):
     """
     Plots a heatmap showing the frequency of agent types being in markets over time, averaged across simulations,
     with horizontal lines to separate each agent type.
@@ -731,6 +736,7 @@ def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     - data: DataFrame containing the simulation data.
     - step_interval: Number of timesteps to average over (e.g., 1 for each step, 5 for blocks of 5 steps).
     - sim: Which simulation we are checking activity in.
+    - show_plot: Whether to display the plot before returning the figure.
     """
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
@@ -749,7 +755,7 @@ def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     heatmap_data = aggregated_data.pivot(index=['Agent Type', 'Market'], columns='Step Interval', values='In Market')
 
     # Plot the heatmap
-    plt.figure(figsize=(15, 12))
+    fig = plt.figure(figsize=(15, 12))
     ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Avg Frequency In Market'})
 
     # Add horizontal lines to separate each agent type and agent type-market pair
@@ -776,10 +782,17 @@ def plot_agent_type_market_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     plt.xlabel('Time Step Intervals', fontsize='large')
     plt.ylabel('Agent Type, Market', fontsize='large')
     plt.tight_layout()
-    plt.show()
+    if show_plot:
+        plt.show()
+    return fig
 
 
-def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
+def plot_market_agent_type_heatmap(
+    data: pd.DataFrame,
+    step_interval: int = 1,
+    sim: str = 'All',
+    show_plot: bool = True,
+):
     """
     Plots a heatmap showing the frequency of agent types being in markets over time (market-to-agent type perspective),
     averaged across simulations, with horizontal lines to separate each market.
@@ -788,6 +801,7 @@ def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     - data: DataFrame containing the simulation data.
     - step_interval: Number of timesteps to average over (e.g., 1 for each step, 5 for blocks of 5 steps).
     - sim: Which simulation we are checking activity in.
+    - show_plot: Whether to display the plot before returning the figure.
     """
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
@@ -806,7 +820,7 @@ def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     heatmap_data = aggregated_data.pivot(index=['Market', 'Agent Type'], columns='Step Interval', values='In Market')
 
     # Plot the heatmap
-    plt.figure(figsize=(15, 12))
+    fig = plt.figure(figsize=(15, 12))
     ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Avg Frequency In Market'})
 
     # Add horizontal lines to separate each agent type and agent type-market pair
@@ -830,11 +844,19 @@ def plot_market_agent_type_heatmap(data: pd.DataFrame, step_interval: int = 1, s
     plt.xlabel('Time Step Intervals', fontsize='large')
     plt.ylabel('Market, Agent Type', fontsize='large')
     plt.tight_layout()
-    plt.show()
+    if show_plot:
+        plt.show()
+    return fig
 
 """## Original Overlap/Firm-Market Entry Plots (Not By Agent Type)"""
 
-def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
+def plot_firm_market_heatmap(
+    data: pd.DataFrame,
+    step_interval: int = 1,
+    sim: str = 'All',
+    separate_agents: bool = False,
+    show_plot: bool = True,
+):
     """
     Plots a heatmap showing the frequency of agent types being in markets over time,
     averaged across simulations.
@@ -843,36 +865,57 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     - data: DataFrame containing the simulation data.
     - step_interval: Deprecated. Kept for backwards compatibility but ignored.
     - sim: Which simulation we are checking activity in.
+    - separate_agents: If True, keep individual agents separated instead of
+      aggregating by broad agent type. Only supported for single-simulation data.
+    - show_plot: Whether to display the plot before returning the figure.
     """
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
     single_simulation = data['Sim'].nunique() == 1
+    if separate_agents and not single_simulation:
+        raise ValueError(
+            'plot_firm_market_heatmap can only separate individual agents when '
+            'the data contain a single simulation.'
+        )
 
-    # Average over broad agent types and preserve each raw timestep.
+    # Normalize agent labels and preserve each raw timestep.
     data = sort_by_agent_type(data.copy())
-    if single_simulation:
-        agent_counts = data.groupby('Agent Type')['Firm'].nunique()
-        unsupported_agent_counts = agent_counts[agent_counts > 2]
-        if not unsupported_agent_counts.empty:
-            count_summary = ', '.join(
-                f'{agent_type}: {count}'
-                for agent_type, count in unsupported_agent_counts.items()
-            )
-            raise ValueError(
-                'plot_firm_market_heatmap supports the single-simulation occupancy '
-                'legend only when each agent type has at most two agents. '
-                f'Found more than two agents for: {count_summary}. '
-                'The legend would need to be updated for that case.'
-            )
-
     agent_type_order = ['Sophisticated', 'Naive', 'AI']
+
+    if separate_agents:
+        data.loc[:, '_Agent Type Order'] = pd.Categorical(
+            data['Agent Type'],
+            categories=agent_type_order,
+            ordered=True,
+        )
+        data = data.sort_values(['_Agent Type Order', 'Firm', 'Step', 'Market'])
+        data = data.drop(columns=['_Agent Type Order'])
+        data = add_agent_type_subscripts(data)
+        row_group_order = data['Agent Type'].drop_duplicates().tolist()
+    else:
+        if single_simulation:
+            agent_counts = data.groupby('Agent Type')['Firm'].nunique()
+            unsupported_agent_counts = agent_counts[agent_counts > 2]
+            if not unsupported_agent_counts.empty:
+                count_summary = ', '.join(
+                    f'{agent_type}: {count}'
+                    for agent_type, count in unsupported_agent_counts.items()
+                )
+                raise ValueError(
+                    'plot_firm_market_heatmap supports the single-simulation occupancy '
+                    'legend only when each agent type has at most two agents. '
+                    f'Found more than two agents for: {count_summary}. '
+                    'The legend would need to be updated for that case.'
+                )
+        row_group_order = agent_type_order
+
     data.loc[:, 'Agent Type'] = pd.Categorical(
         data['Agent Type'],
-        categories=agent_type_order,
+        categories=row_group_order,
         ordered=True,
     )
 
-    # Aggregate data by averaging over simulations and agent-type membership per market.
+    # Aggregate data by averaging over simulations or agent-type membership per market.
     aggregated_data = (
         data.groupby(['Step', 'Agent Type', 'Market'])['In Market']
         .mean()
@@ -883,11 +926,20 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     # Pivot to create a matrix where rows are (Agent Type, Market), columns are timesteps,
     # and values are averaged 'In Market'.
     heatmap_data = aggregated_data.pivot(index=['Agent Type', 'Market'], columns='Step', values='In Market')
-    heatmap_data = heatmap_data.reindex(agent_type_order, level='Agent Type')
+    heatmap_data = heatmap_data.reindex(row_group_order, level='Agent Type')
+    total_rows = heatmap_data.index.size
 
     # Plot the heatmap
-    plt.figure(figsize=(15, 12))
-    if single_simulation:
+    figure_height = max(12, total_rows * 0.12) if separate_agents else 12
+    fig = plt.figure(figsize=(15, figure_height))
+    if single_simulation and separate_agents:
+        single_agent_cmap = mcolors.ListedColormap(['#ecebcf', '#0d2466'])
+        single_agent_norm = mcolors.BoundaryNorm(
+            boundaries=[-0.01, 0.5, 1.01],
+            ncolors=2,
+        )
+        ax = sns.heatmap(heatmap_data, cmap=single_agent_cmap, norm=single_agent_norm, cbar=False)
+    elif single_simulation:
         # Discrete occupancy states for a single simulation:
         # 0.0 => none present, 0.0 < value < 1.0 => partial, 1.0 => all agents present.
         # The tiny positive boundary keeps exactly zero in the "none" bin while
@@ -902,7 +954,6 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
         ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Average Frequency in Market'})
 
     # Add horizontal lines to separate each row.
-    total_rows = heatmap_data.index.size
     for line_pos in range(1, total_rows):
         ax.axhline(line_pos, color='black', linewidth=0.5)
 
@@ -917,7 +968,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     ax.set_yticks(np.arange(total_rows) + 0.5)
     ax.set_yticklabels(market_labels, rotation=0)
 
-    # Add a merged-cell style label column for each agent type on the left.
+    # Add a merged-cell style label column for each agent type or individual agent on the left.
     # Use the same agent-color palette used for CI shading in batch_plot_generation.py.
     type_to_band_color = {
         'Sophisticated': '#1446A0',
@@ -930,7 +981,19 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     legend_width = 0.06
 
     start = 0
-    for agent_type in agent_type_order:
+    for agent_type in row_group_order:
+        agent_type_label = str(agent_type)
+        base_type = base_agent_label(agent_type_label)
+        display_label = agent_type_label
+        if separate_agents:
+            suffix_match = re.search(r"[₀-₉]+$", agent_type_label)
+            suffix = suffix_match.group(0) if suffix_match else ""
+            compact_base = {
+                'Sophisticated': 'Soph.',
+                'Naive': 'Naive',
+                'AI': 'AI',
+            }.get(base_type, base_type)
+            display_label = compact_base + suffix
         mask = type_values == agent_type
         count = int(mask.sum())
         if count == 0:
@@ -941,7 +1004,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             legend_width,
             count,
             transform=ax.get_yaxis_transform(),
-            facecolor=type_to_band_color.get(agent_type, '#f0f0f0'),
+            facecolor=type_to_band_color.get(base_type, '#f0f0f0'),
             edgecolor='black',
             linewidth=2.5,
             alpha=0.2,
@@ -951,7 +1014,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
         ax.text(
             legend_x + (legend_width / 2),
             center,
-            agent_type,
+            display_label,
             transform=ax.get_yaxis_transform(),
             ha='center',
             va='center',
@@ -978,7 +1041,7 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     # Emphasize horizontal divider lines between agent-type legend sections.
     section_starts = [0]
     running = 0
-    for agent_type in agent_type_order:
+    for agent_type in row_group_order:
         running += int((type_values == agent_type).sum())
         section_starts.append(running)
 
@@ -992,7 +1055,28 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
             clip_on=False,
         )
 
-    if single_simulation:
+    if single_simulation and separate_agents:
+        occupancy_legend = [
+            patches.Patch(facecolor='#0d2466', edgecolor='black', label='Agent present in market at time step'),
+            patches.Patch(facecolor='#ecebcf', edgecolor='black', label='Agent absent from market at time step'),
+        ]
+        occupancy_legend_box = ax.legend(
+            handles=occupancy_legend,
+            title='Single-simulation occupancy',
+            loc='upper left',
+            bbox_to_anchor=(1.02, 1.0),
+            borderaxespad=0,
+            frameon=True,
+            fontsize='medium',
+            title_fontsize='large',
+            alignment='center',
+            borderpad=0.4,
+            labelspacing=0.4,
+            handletextpad=0.7,
+        )
+        occupancy_legend_box.get_title().set_fontweight('bold')
+        occupancy_legend_box.get_title().set_ha('center')
+    elif single_simulation:
         occupancy_legend = [
             patches.Patch(facecolor='#0d2466', edgecolor='black', label='All agents of type present'),
             patches.Patch(
@@ -1032,9 +1116,16 @@ def plot_firm_market_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     plt.ylabel('Market #', labelpad=8, fontsize='large')
     plt.tight_layout()
     plt.subplots_adjust(left=0.17)
-    plt.show()
+    if show_plot:
+        plt.show()
+    return fig
 
-def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: str = 'All') -> None:
+def plot_market_firm_heatmap(
+    data: pd.DataFrame,
+    step_interval: int = 1,
+    sim: str = 'All',
+    show_plot: bool = True,
+):
     """
     Plots a heatmap showing the frequency of firms being in markets over time (market-to-firm perspective),
     averaged across simulations, with horizontal lines to separate each market.
@@ -1043,6 +1134,7 @@ def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     - data: DataFrame containing the simulation data.
     - step_interval: Number of timesteps to average over (e.g., 1 for each step, 5 for blocks of 5 steps).
     - sim: Which simulation we are checking activity in.
+    - show_plot: Whether to display the plot before returning the figure.
     """
     if sim != 'All':
         data = data[data['Sim'] == sim].copy()  # Ensure a copy is created for safe modification
@@ -1061,7 +1153,7 @@ def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     heatmap_data = aggregated_data.pivot(index=['Market', 'Firm'], columns='Step Interval', values='In Market')
 
     # Plot the heatmap
-    plt.figure(figsize=(15, 12))
+    fig = plt.figure(figsize=(15, 12))
     ax = sns.heatmap(heatmap_data, cmap="YlGnBu", cbar_kws={'label': 'Avg Frequency In Market'})
 
     # Add horizontal lines to separate each market
@@ -1085,7 +1177,9 @@ def plot_market_firm_heatmap(data: pd.DataFrame, step_interval: int = 1, sim: st
     plt.xlabel('Time Step Intervals', fontsize='large')
     plt.ylabel('Market, Firm', fontsize='large')
     plt.tight_layout()
-    plt.show()
+    if show_plot:
+        plt.show()
+    return fig
 
 
 def main() -> None:
@@ -1110,6 +1204,14 @@ def main() -> None:
         "--plot-heatmaps",
         action="store_true",
         help="Use this flag if you want to plot heat maps in addition to the core plots."
+    )
+    parser.add_argument(
+        "--separate-agents",
+        action="store_true",
+        help=(
+            "For single-simulation firm-market heatmaps, keep each agent separate "
+            "instead of aggregating by broad agent type."
+        ),
     )
     parser.add_argument(
         "--single-simulation",
@@ -1140,6 +1242,12 @@ def main() -> None:
 
     if (args.zip_path is None) == (args.zip_parent_dir is None):
         parser.error("Provide exactly one of --zip-path or --zip-parent-dir.")
+
+    if args.separate_agents and not args.plot_heatmaps:
+        parser.error("--separate-agents only applies when --plot-heatmaps is set.")
+
+    if args.separate_agents and args.single_simulation is None:
+        parser.error("--separate-agents requires --single-simulation.")
 
     if args.zip_parent_dir is not None:
         log_progress(f"Discovering ZIP archives under: {args.zip_parent_dir}")
@@ -1225,20 +1333,36 @@ def main() -> None:
             log_progress(
                 f"Heatmap data filtered to simulation {args.single_simulation}: {len(output):,} row(s)."
             )
+        show_heatmaps = args.output_dir is None
         log_progress("Creating heatmap 1/3: market by agent type.")
-        plot_market_agent_type_heatmap(output, step_interval=5)
+        heatmap_fig1 = plot_market_agent_type_heatmap(
+            output,
+            step_interval=5,
+            show_plot=show_heatmaps,
+        )
         if args.output_dir is not None:
-            plt.gcf().savefig(args.output_dir / "market_agent_type_heatmap.png", dpi=300)
+            heatmap_fig1.savefig(args.output_dir / "market_agent_type_heatmap.png", dpi=300)
             log_progress("Saved heatmap 1/3.")
-        log_progress("Creating heatmap 2/3: firm by market (with agent-type bands).")
-        plot_firm_market_heatmap(output)
+        if args.separate_agents:
+            log_progress("Creating heatmap 2/3: firm by market (with individual-agent bands).")
+        else:
+            log_progress("Creating heatmap 2/3: firm by market (with agent-type bands).")
+        heatmap_fig2 = plot_firm_market_heatmap(
+            output,
+            separate_agents=args.separate_agents,
+            show_plot=show_heatmaps,
+        )
         if args.output_dir is not None:
-            plt.gcf().savefig(args.output_dir / "firm_market_heatmap.png", dpi=300)
+            heatmap_fig2.savefig(args.output_dir / "firm_market_heatmap.png", dpi=300)
             log_progress("Saved heatmap 2/3.")
         log_progress("Creating heatmap 3/3: market by firm.")
-        plot_market_firm_heatmap(output, step_interval=5)
+        heatmap_fig3 = plot_market_firm_heatmap(
+            output,
+            step_interval=5,
+            show_plot=show_heatmaps,
+        )
         if args.output_dir is not None:
-            plt.gcf().savefig(args.output_dir / "market_firm_heatmap.png", dpi=300)
+            heatmap_fig3.savefig(args.output_dir / "market_firm_heatmap.png", dpi=300)
             log_progress("Saved heatmap 3/3.")
 
     log_progress("Workflow finished.")

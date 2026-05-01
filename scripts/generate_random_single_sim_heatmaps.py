@@ -10,7 +10,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -48,6 +47,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional RNG seed for reproducible sampling.",
     )
+    parser.add_argument(
+        "--separate-agents",
+        action="store_true",
+        help="Keep individual agents separate instead of aggregating by broad agent type.",
+    )
     return parser.parse_args()
 
 
@@ -70,12 +74,21 @@ def validate_inputs(df: pd.DataFrame, num_plots: int) -> list[int]:
     return unique_sims
 
 
-def save_heatmap_for_simulation(df: pd.DataFrame, sim_id: int, output_path: Path) -> None:
+def save_heatmap_for_simulation(
+    df: pd.DataFrame,
+    sim_id: int,
+    output_path: Path,
+    separate_agents: bool = False,
+) -> None:
     sim_df = df[df["Sim"] == sim_id].copy()
-    with patch.object(plt, "show", return_value=None):
-        plots.plot_firm_market_heatmap(sim_df, sim=sim_id)
-    plt.gcf().savefig(output_path, dpi=300)
-    plt.close(plt.gcf())
+    figure = plots.plot_firm_market_heatmap(
+        sim_df,
+        sim=sim_id,
+        separate_agents=separate_agents,
+        show_plot=False,
+    )
+    figure.savefig(output_path, dpi=300)
+    plt.close(figure)
 
 
 def main() -> None:
@@ -91,7 +104,12 @@ def main() -> None:
 
     for sim_id in sampled_sims:
         output_path = args.output_dir / f"sim_{sim_id}_firm_market_heatmap.png"
-        save_heatmap_for_simulation(df, sim_id, output_path)
+        save_heatmap_for_simulation(
+            df,
+            sim_id,
+            output_path,
+            separate_agents=args.separate_agents,
+        )
         print(f"Saved heatmap for simulation {sim_id} -> {output_path}")
 
     print(f"Done. Generated {len(sampled_sims)} heatmap(s) in {args.output_dir}")
