@@ -11,7 +11,7 @@ BusinessStrategySimulator3 is a research playground for studying market entry an
 - [Batch training helpers](#batch-training-helpers)
 - [Project layout](#project-layout)
 - [Further reading](#further-reading)
-- [Licensing](#licensing)
+- [Licensing, Data, and Notices](#licensing-data-and-notices)
 
 ## Overview
 
@@ -81,7 +81,7 @@ BusinessStrategySimulator3/
 
 The repository serves as a foundation for exploring how reinforcement learning can guide firms when entering or exiting markets.
 
-## Licensing and Data
+## Licensing, Data, and Notices
 
 Code in this repository is licensed under the MIT License (see the root `LICENSE` file).
 
@@ -93,3 +93,10 @@ The experimental dataset for the manuscript corresponding to this project is pub
 The dataset includes trained reinforcement learning agent artifacts, simulator configurations, training hyperparameters, and evaluation datasets.
 
 The dataset is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+
+Third-party software and data notices are summarized in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+When describing experiments that use Stable-Baselines3, cite:
+
+> A. Raffin, A. Hill, A. Gleave, A. Kanervisto, M. Ernestus, and N. Dormann,
+> "Stable-Baselines3: Reliable Reinforcement Learning Implementations,"
+> Journal of Machine Learning Research, vol. 22, no. 268, pp. 1-8, 2021.
