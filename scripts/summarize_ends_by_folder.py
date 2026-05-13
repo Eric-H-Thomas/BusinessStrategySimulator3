@@ -8,7 +8,7 @@ import csv
 import math
 from pathlib import Path
 
-ENDS_FILENAME = "MasterOutputEndings.csv"
+ENDS_FILENAME = "MasterOutputEnds.csv"
 PER_FILE_SUMMARY_NAME = "endings_per_file_summary.csv"
 FOLDER_SUMMARY_NAME = "endings_folder_summary_mean_std.csv"
 

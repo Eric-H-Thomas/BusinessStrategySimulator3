@@ -14,8 +14,8 @@ from pathlib import Path
 
 MASTER_OUTPUT_FILENAME = "MasterOutput.csv"
 ENDS_FILENAME = "MasterOutputEnds.csv"
-ROW_PROGRESS_INTERVAL = 100_000
-FILE_PROGRESS_INTERVAL = 10
+ROW_PROGRESS_INTERVAL = 5000000
+FILE_PROGRESS_INTERVAL = 1
 
 
 def extract_ends(master_output_path: Path) -> Path:
